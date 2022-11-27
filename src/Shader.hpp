@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <glm/matrix.hpp>
 
 class Shader {
 public:
@@ -12,6 +13,7 @@ public:
     void setInt(const std::string& name, int value);
     void setFloat(const std::string& name, float value);
     void setVec2Float(const std::string& name, float v1, float v2);
+    void setMat4(const std::string& name, const glm::mat4 v);
 
     int getId();
 
