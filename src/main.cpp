@@ -3,6 +3,9 @@
 #include <glad/glad.h> // needs to be included before glfw
 #include <GLFW/glfw3.h>
 
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb/stb_image.hpp>
+
 #include "Shader.hpp"
 
 void framebufferSizeCallback(GLFWwindow* window, int width, int height);
