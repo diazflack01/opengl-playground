@@ -38,17 +38,34 @@ int main(int argc, char** argv) {
 
     glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
 
-    unsigned int texture;
-    glGenTextures(1, &texture);
-    glBindTexture(GL_TEXTURE_2D, texture);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    unsigned int textureWoodContainer;
+    glGenTextures(1, &textureWoodContainer);
     int width, height, nrChannels;
+    stbi_set_flip_vertically_on_load(true);
     unsigned char* data = stbi_load("/home/kelvin.robles/work/repos/personal/opengl-playground/resources/texture/wooden_container.jpg", &width, &height, &nrChannels, 0);
     if (data != nullptr) {
+        glBindTexture(GL_TEXTURE_2D, textureWoodContainer);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+    } else {
+        std::cout << "Failed to load texture\n";
+    }
+    stbi_image_free(data);
+
+    unsigned int textureAwesomeFace;
+    glGenTextures(1, &textureAwesomeFace);
+    data = stbi_load("/home/kelvin.robles/work/repos/personal/opengl-playground/resources/texture/awesomeface.png", &width, &height, &nrChannels, 0);
+    if (data != nullptr) {
+        glBindTexture(GL_TEXTURE_2D, textureAwesomeFace);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
         glGenerateMipmap(GL_TEXTURE_2D);
     } else {
         std::cout << "Failed to load texture\n";
@@ -111,6 +128,11 @@ int main(int argc, char** argv) {
     // unbind VAO
     glEnableVertexAttribArray(0);
 
+    shader.use();
+    // purposely flip the value of this to test GL_TEXTUREN value mapping
+    shader.setInt("texture0", 1); // 1 - maps to GL_TEXTURE1
+    shader.setInt("texture1", 0); // 0 - maps to GL_TEXTURE0
+
     // wireframe
     // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
@@ -121,7 +143,10 @@ int main(int argc, char** argv) {
         glClear(GL_COLOR_BUFFER_BIT);
 
         shader.use();
-        glBindTexture(GL_TEXTURE_2D, texture);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, textureAwesomeFace); // maps to texture0 uniform
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, textureWoodContainer); // maps to texture1 uniform
         glBindVertexArray(VAO);
         // glDrawArrays(GL_TRIANGLES, 0, 3);
         // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
