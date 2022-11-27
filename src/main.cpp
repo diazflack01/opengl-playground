@@ -6,6 +6,8 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb/stb_image.hpp>
 
+#include <glm/glm.hpp>
+
 #include "Shader.hpp"
 
 void framebufferSizeCallback(GLFWwindow* window, int width, int height);
