@@ -7,6 +7,8 @@
 #include <stb/stb_image.hpp>
 
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 #include "Shader.hpp"
 
@@ -145,10 +147,17 @@ int main(int argc, char** argv) {
         glClear(GL_COLOR_BUFFER_BIT);
 
         shader.use();
+
+        glm::mat4 trans = glm::mat4(1.0f);
+        trans = glm::translate(trans, glm::vec3(0.5f, -0.5f, 0.0f));
+        trans = glm::rotate(trans, (float)glfwGetTime(), glm::vec3(0.0f, 0.0f, 1.0f));
+        const unsigned int transformLoc = glGetUniformLocation(shader.getId(), "transform");
+        glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(trans));
+
         glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, textureAwesomeFace); // maps to texture0 uniform
+        glBindTexture(GL_TEXTURE_2D, textureWoodContainer); // maps to texture0 uniform
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, textureWoodContainer); // maps to texture1 uniform
+        glBindTexture(GL_TEXTURE_2D, textureAwesomeFace); // maps to texture1 uniform
         glBindVertexArray(VAO);
         // glDrawArrays(GL_TRIANGLES, 0, 3);
         // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
