@@ -11,8 +11,23 @@
 
 #include "Shader.hpp"
 
+glm::vec3 cameraPos   = glm::vec3(0.0f, 0.0f,  3.0f);
+glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
+glm::vec3 cameraUp    = glm::vec3(0.0f, 1.0f,  0.0f);
+float lastX = 400;
+float lastY = 300;
+bool firstMouse = true;
+float yaw = -90.0f; // rotate at x-axis so it looks forward
+float pitch = 0.0f;
+float fov = 45.0f;
+
+float deltaTime = 0.0f;	// Time between current frame and last frame
+float lastFrame = 0.0f; // Time of last frame
+
 void framebufferSizeCallback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow* window);
+void mouseCallback(GLFWwindow* window, double xpos, double ypos);
+void scrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 
 int main(int argc, char** argv) {
     std::cout << "main()\n";
@@ -39,7 +54,13 @@ int main(int argc, char** argv) {
 
     glViewport(0, 0, 800, 600);
 
+    // disable mouse cursor
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
+    // event callbacks
     glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
+    glfwSetCursorPosCallback(window, mouseCallback);
+    glfwSetScrollCallback(window, scrollCallback);
 
     unsigned int textureWoodContainer;
     glGenTextures(1, &textureWoodContainer);
@@ -199,6 +220,10 @@ int main(int argc, char** argv) {
     glEnable(GL_DEPTH_TEST);
 
     while (!glfwWindowShouldClose(window)) {
+        float currentFrame = glfwGetTime();
+        deltaTime = currentFrame - lastFrame;
+        lastFrame = currentFrame;
+
         processInput(window);
 
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
@@ -206,13 +231,8 @@ int main(int argc, char** argv) {
 
         shader.use();
 
-        glm::mat4 model = glm::mat4{1.0f};
-        model = glm::rotate(model, (float)glfwGetTime() * glm::radians(-55.0f), glm::vec3{1.0f, 0.0f, 0.0f});
-        glm::mat4 view = glm::mat4(1.0f);
-        view = glm::translate(view, glm::vec3{0.0f, 0.0f, -3.f});
-        glm::mat4 projection = glm::mat4(1.0f);
-        projection = glm::perspective(glm::radians(45.0f), 800.f/600.f, 0.1f, 100.0f);
-        shader.setMat4("model", model);
+        const glm::mat4 view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+        const glm::mat4 projection = glm::perspective(glm::radians(fov), 800.f/600.f, 0.1f, 100.0f);
         shader.setMat4("view", view);
         shader.setMat4("projection", projection);
 
@@ -250,4 +270,57 @@ void processInput(GLFWwindow* window) {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, true);
     }
+
+    const float cameraSpeed = 2.5f * deltaTime;
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+        cameraPos += cameraSpeed * cameraFront;
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+        cameraPos -= cameraSpeed * cameraFront;
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+        cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+        cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+}
+
+void mouseCallback(GLFWwindow* window, double xpos, double ypos) {
+    if (firstMouse)
+    {
+        lastX = xpos;
+        lastY = ypos;
+        firstMouse = false;
+    }
+
+    float xoffset = xpos - lastX;
+    float yoffset = lastY - ypos;
+    lastX = xpos;
+    lastY = ypos;
+
+    float sensitivity = 0.1f;
+    xoffset *= sensitivity;
+    yoffset *= sensitivity;
+
+    yaw   += xoffset;
+    pitch += yoffset;
+
+    if(pitch > 89.0f)
+        pitch = 89.0f;
+    if(pitch < -89.0f)
+        pitch = -89.0f;
+
+    glm::vec3 direction;
+    direction.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
+    direction.y = sin(glm::radians(pitch));
+    direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+    cameraFront = glm::normalize(direction);
+}
+
+void scrollCallback(GLFWwindow* window, double xoffset, double yoffset)
+{
+    fov -= (float)yoffset;
+    if (fov < 1.0f)
+        fov = 1.0f;
+    if (fov > 45.0f)
+        fov = 45.0f;
+
+    std::cout << "fov: " << fov << '\n';
 }
