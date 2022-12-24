@@ -47,6 +47,8 @@ public:
 
     float getFieldOfView() const;
 
+    glm::vec3 getPosition() const;
+
 private:
     void recalculateViewMatrix();
 

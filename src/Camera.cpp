@@ -95,3 +95,7 @@ void Camera::recalculateViewMatrix() {
     const auto& cameraUp = mConfigState.up;
     mViewMatrix = glm::lookAt(cameraPosition, cameraPosition + cameraFront, cameraUp);
 }
+
+glm::vec3 Camera::getPosition() const {
+    return mConfigState.position;
+}
