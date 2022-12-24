@@ -19,7 +19,7 @@ const float SCREEN_WIDTH = 800.0f;
 const float SCREEN_HEIGTH = 600.0f;
 
 Camera::ConfigState cameraConfig{
-        glm::vec3(0.0f, 0.0f,  3.0f),
+        glm::vec3(0.0f, 0.0f,  8.0f),
         glm::vec3(0.0f, 0.0f, -1.0f),
         glm::vec3(0.0f, 1.0f,  0.0f),
         Camera::BoundedData<float>{45.0f, 1.0f, 45.0f},
@@ -32,7 +32,7 @@ Camera::ConfigState cameraConfig{
 Camera camera{cameraConfig};
 
 void framebufferSizeCallback(GLFWwindow* window, int width, int height);
-void processInput(GLFWwindow* window);
+void processKeyboardInputs(GLFWwindow* window);
 void mouseCallback(GLFWwindow* window, double xpos, double ypos);
 void scrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 
@@ -105,7 +105,9 @@ int main(int argc, char** argv) {
 
     // Shader shader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/basic.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/basic.frag"};
     // Shader shader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/basic_texture.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/basic_texture.frag"};
-    Shader shader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/basic_cube.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/basic_cube.frag"};
+    // Shader texturedShader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/basic_cube.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/basic_cube.frag"};
+    Shader lightShader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/light.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/light.frag"};
+    Shader lightSrcShader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/light.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/light_src.frag"};
 
     const float vertices[] = {
             0.5f,  0.5f, 0.0f,  // top right
@@ -215,10 +217,12 @@ int main(int argc, char** argv) {
     // unbind VAO
     glEnableVertexAttribArray(0);
 
-    shader.use();
-    // purposely flip the value of this to test GL_TEXTUREN value mapping
-    shader.setInt("texture0", 1); // 1 - maps to GL_TEXTURE1
-    shader.setInt("texture1", 0); // 0 - maps to GL_TEXTURE0
+    unsigned lightVAO;
+    glGenVertexArrays(1, &lightVAO);
+    glBindVertexArray(lightVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
 
     // wireframe
     // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -227,37 +231,67 @@ int main(int argc, char** argv) {
     glEnable(GL_DEPTH_TEST);
 
     while (!glfwWindowShouldClose(window)) {
-        float currentFrame = glfwGetTime();
+        const float currentFrame = glfwGetTime();
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
 
-        processInput(window);
+        processKeyboardInputs(window);
 
+        // Clear color and depth buffer
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        shader.use();
-
+        // Current cycle camera view and projection
         const glm::mat4 view = camera.getViewMatrix();
         const glm::mat4 projection = glm::perspective(glm::radians(camera.getFieldOfView()), SCREEN_WIDTH/SCREEN_HEIGTH, 0.1f, 100.0f);
-        shader.setMat4("view", view);
-        shader.setMat4("projection", projection);
 
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, textureWoodContainer); // maps to texture0 uniform
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, textureAwesomeFace); // maps to texture1 uniform
+        /*** Light Source ***/
+        const glm::mat4 lightModel = [&]{
+            constexpr glm::vec3 lightPosition{1.2f, 1.0f, 2.0f};
+            auto model = glm::translate(glm::mat4{1.0f}, lightPosition);
+            return glm::scale(model, glm::vec3{0.2f});
+        }();
+
+        lightSrcShader.use();
+        lightSrcShader.setMat4("model", lightModel);
+        lightSrcShader.setMat4("view", view);
+        lightSrcShader.setMat4("projection", projection);
+
+        glBindVertexArray(lightVAO);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+
+        /*** Object/s with lighting shader applied  ***/
+        lightShader.use();
+        lightShader.setMat4("model", glm::mat4(1.0f));
+        lightShader.setMat4("view", view);
+        lightShader.setMat4("projection", projection);
+        lightShader.setVec3Float("objectColor", 1.0f, 0.5f, 0.31f);
+        lightShader.setVec3Float("lightColor",  1.0f, 1.0f, 1.0f);
+
         glBindVertexArray(VAO);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
 
-        for (auto i = 0u; i < 10; i++) {
-            glm::mat4 model = glm::mat4(1.0f);
-            model = glm::translate(model, cubePositions[i]);
-            float angle = 20.0f * i;
-            model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
-            shader.setMat4("model", model);
-            glDrawArrays(GL_TRIANGLES, 0, 36);
-        }
+        /*** Multiple Cubes ***/
+        // texturedShader.use();
+        // texturedShader.setMat4("view", view);
+        // texturedShader.setMat4("projection", projection);
+        // // purposely flip the value of this to test GL_TEXTUREN value mapping
+        // texturedShader.setInt("texture0", 1); // 1 - maps to GL_TEXTURE1
+        // texturedShader.setInt("texture1", 0); // 0 - maps to GL_TEXTURE0
+        // glActiveTexture(GL_TEXTURE1);
+        // glBindTexture(GL_TEXTURE_2D, textureWoodContainer); // maps to texture0 uniform
+        // glActiveTexture(GL_TEXTURE0);
+        // glBindTexture(GL_TEXTURE_2D, textureAwesomeFace); // maps to texture1 uniform
+        // for (auto i = 0u; i < 10; i++) {
+        //     glm::mat4 model = glm::mat4(1.0f);
+        //     model = glm::translate(model, cubePositions[i]);
+        //     float angle = 20.0f * i;
+        //     model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
+        //     texturedShader.setMat4("model", model);
+        //     glDrawArrays(GL_TRIANGLES, 0, 36);
+        // }
 
+        /*** Render by re-using vertices through EBO ***/
         // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
         // glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
@@ -273,7 +307,7 @@ void framebufferSizeCallback(GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
 }
 
-void processInput(GLFWwindow* window) {
+void processKeyboardInputs(GLFWwindow* window) {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, true);
     }
