@@ -1,4 +1,5 @@
 #include <iostream>
+#include <optional>
 
 #include <glad/glad.h> // needs to be included before glfw
 #include <GLFW/glfw3.h>
@@ -36,6 +37,16 @@ void processKeyboardInputs(GLFWwindow* window);
 void mouseCallback(GLFWwindow* window, double xpos, double ypos);
 void scrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 
+struct TextureContext
+{
+    unsigned int id;
+    int width;
+    int height;
+    int numComponents;
+};
+
+std::optional<TextureContext> tryLoadTexture(const std::string& texturePath);
+
 int main(int argc, char** argv) {
     std::cout << "main()\n";
 
@@ -69,39 +80,25 @@ int main(int argc, char** argv) {
     glfwSetCursorPosCallback(window, mouseCallback);
     glfwSetScrollCallback(window, scrollCallback);
 
-    unsigned int textureWoodContainer;
-    glGenTextures(1, &textureWoodContainer);
-    int width, height, nrChannels;
     stbi_set_flip_vertically_on_load(true);
-    unsigned char* data = stbi_load("/home/kelvin.robles/work/repos/personal/opengl-playground/resources/texture/wooden_container.jpg", &width, &height, &nrChannels, 0);
-    if (data != nullptr) {
-        glBindTexture(GL_TEXTURE_2D, textureWoodContainer);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-        glGenerateMipmap(GL_TEXTURE_2D);
-    } else {
-        std::cout << "Failed to load texture\n";
-    }
-    stbi_image_free(data);
+    const auto textureWoodContainer = tryLoadTexture("/home/kelvin.robles/work/repos/personal/opengl-playground/resources/texture/wooden_container.jpg");
+    if (!textureWoodContainer.has_value()) {
+        return 1;
+    };
 
-    unsigned int textureAwesomeFace;
-    glGenTextures(1, &textureAwesomeFace);
-    data = stbi_load("/home/kelvin.robles/work/repos/personal/opengl-playground/resources/texture/awesomeface.png", &width, &height, &nrChannels, 0);
-    if (data != nullptr) {
-        glBindTexture(GL_TEXTURE_2D, textureAwesomeFace);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-        glGenerateMipmap(GL_TEXTURE_2D);
-    } else {
-        std::cout << "Failed to load texture\n";
-    }
-    stbi_image_free(data);
+    const auto textureAwesomeFace = tryLoadTexture("/home/kelvin.robles/work/repos/personal/opengl-playground/resources/texture/awesomeface.png");
+    if (!textureAwesomeFace.has_value()) {
+        return 1;
+    };
+
+    const auto woodContainerDiffuseMap = tryLoadTexture("/home/kelvin.robles/work/repos/personal/opengl-playground/resources/texture/container2.png");
+    if (!woodContainerDiffuseMap.has_value()) {
+        return 1;
+    };
+    const auto woodContainerSpecularMap = tryLoadTexture("/home/kelvin.robles/work/repos/personal/opengl-playground/resources/texture/container2_specular.png");
+    if (!woodContainerSpecularMap.has_value()) {
+        return 1;
+    };
 
     // Shader shader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/basic.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/basic.frag"};
     // Shader shader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/basic_texture.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/basic_texture.frag"};
@@ -224,6 +221,51 @@ int main(int argc, char** argv) {
             -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
     };
 
+    const float cubeVerticesWithNormalsAndTextureCoords[] = {
+            // positions          // normals           // texture coords
+            -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
+            0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 0.0f,
+            0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f,
+            0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f,
+            -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 1.0f,
+            -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
+
+            -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 0.0f,
+            0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 0.0f,
+            0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 1.0f,
+            0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 1.0f,
+            -0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 1.0f,
+            -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 0.0f,
+
+            -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
+            -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 1.0f,
+            -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
+            -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
+            -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 0.0f,
+            -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
+
+            0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
+            0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f,
+            0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
+            0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
+            0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 0.0f,
+            0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
+
+            -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f,
+            0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 1.0f,
+            0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f,
+            0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f,
+            -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 0.0f,
+            -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f,
+
+            -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f,
+            0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 1.0f,
+            0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
+            0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
+            -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 0.0f,
+            -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f
+    };
+
     glm::vec3 cubePositions[] = {
             glm::vec3( 0.0f,  0.0f,  0.0f),
             glm::vec3( 2.0f,  5.0f, -15.0f),
@@ -251,16 +293,16 @@ int main(int argc, char** argv) {
     // - any update in bind (VBO, EBO) will be stored
     glBindVertexArray(VAO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVerticesWithNormals), cubeVerticesWithNormals, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVerticesWithNormalsAndTextureCoords), cubeVerticesWithNormalsAndTextureCoords, GL_STATIC_DRAW);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
     // shader attributes
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
-    // glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-    // glEnableVertexAttribArray(2);
+     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+     glEnableVertexAttribArray(2);
     // unbind VAO
     glEnableVertexAttribArray(0);
 
@@ -268,7 +310,7 @@ int main(int argc, char** argv) {
     glGenVertexArrays(1, &lightVAO);
     glBindVertexArray(lightVAO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
     // wireframe
@@ -315,9 +357,12 @@ int main(int argc, char** argv) {
         const auto camPos = camera.getPosition();
         lightShader.setVec3Float("viewPos", camPos.x, camPos.y, camPos.z);
         // object material
-        lightShader.setVec3Float("material.ambient", 1.0f, 0.5f, 0.31f);
-        lightShader.setVec3Float("material.diffuse", 1.0f, 0.5f, 0.31f);
-        lightShader.setVec3Float("material.specular", 0.5f, 0.5f, 0.5f);
+        lightShader.setInt("material.diffuse", 0);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, woodContainerDiffuseMap->id);
+        lightShader.setInt("material.specular", 1);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, woodContainerSpecularMap->id);
         lightShader.setFloat("material.shininess", 32.0f);
         // light
         lightShader.setVec3Float("light.ambient",  0.2f, 0.2f, 0.2f);
@@ -386,4 +431,35 @@ void mouseCallback(GLFWwindow* window, double xpos, double ypos) {
 void scrollCallback(GLFWwindow* window, double xoffset, double yoffset)
 {
     camera.processMouseScroll(yoffset);
+}
+
+std::optional<TextureContext> tryLoadTexture(const std::string& texturePath)
+{
+    unsigned int id;
+    glGenTextures(1, &id);
+    int width, height, nrComponents;
+    unsigned char* data = stbi_load(texturePath.c_str(), &width, &height, &nrComponents, 0);
+    if (data != nullptr) {
+        GLenum format;
+        if (nrComponents == 1)
+            format = GL_RED;
+        else if (nrComponents == 3)
+            format = GL_RGB;
+        else if (nrComponents == 4)
+            format = GL_RGBA;
+
+        glBindTexture(GL_TEXTURE_2D, id);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+    } else {
+        std::cout << "Failed to load texture '" << texturePath << "'\n";
+        return std::nullopt;
+    }
+    stbi_image_free(data);
+
+    return TextureContext{id, width, height, nrComponents};
 }
