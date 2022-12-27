@@ -312,11 +312,18 @@ int main(int argc, char** argv) {
         lightShader.setMat4("model", glm::mat4(1.0f));
         lightShader.setMat4("view", view);
         lightShader.setMat4("projection", projection);
-        lightShader.setVec3Float("objectColor", 1.0f, 0.5f, 0.31f);
-        lightShader.setVec3Float("lightColor",  1.0f, 1.0f, 1.0f);
-        lightShader.setVec3Float("lightPos", lightPosition.x, lightPosition.y, lightPosition.z);
         const auto camPos = camera.getPosition();
         lightShader.setVec3Float("viewPos", camPos.x, camPos.y, camPos.z);
+        // object material
+        lightShader.setVec3Float("material.ambient", 1.0f, 0.5f, 0.31f);
+        lightShader.setVec3Float("material.diffuse", 1.0f, 0.5f, 0.31f);
+        lightShader.setVec3Float("material.specular", 0.5f, 0.5f, 0.5f);
+        lightShader.setFloat("material.shininess", 32.0f);
+        // light
+        lightShader.setVec3Float("light.ambient",  0.2f, 0.2f, 0.2f);
+        lightShader.setVec3Float("light.diffuse",  0.5f, 0.5f, 0.5f); // darken diffuse light a bit
+        lightShader.setVec3Float("light.specular", 1.0f, 1.0f, 1.0f);
+        lightShader.setVec3Float("light.position", lightPosition.x, lightPosition.y, lightPosition.z);
 
         glBindVertexArray(VAO);
         glDrawArrays(GL_TRIANGLES, 0, 36);
