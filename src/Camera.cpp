@@ -99,3 +99,7 @@ void Camera::recalculateViewMatrix() {
 glm::vec3 Camera::getPosition() const {
     return mConfigState.position;
 }
+
+glm::vec3 Camera::getFront() const {
+    return mConfigState.front;
+}
