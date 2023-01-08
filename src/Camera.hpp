@@ -55,6 +55,6 @@ private:
     void recalculateViewMatrix();
 
     ConfigState mConfigState;
-    bool firstMouseMovement{true};
+    bool mFirstMouseMovement{true};
     glm::mat4 mViewMatrix{1.0};
 };

@@ -44,8 +44,8 @@ void Camera::processMovement(Camera::Movement movement, float deltaTime) {
 
 void Camera::processMouseMovement(float xPos, float yPos) {
     glm::vec2 XYOffset = [&]{
-        if (firstMouseMovement) {
-            firstMouseMovement = false;
+        if (mFirstMouseMovement) {
+            mFirstMouseMovement = false;
             return glm::vec2{0.0f, 0.0f};
         }
         const auto& lastXY = mConfigState.mouseXYPos;
