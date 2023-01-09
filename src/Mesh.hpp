@@ -5,7 +5,6 @@
 #include <glm/glm.hpp>
 
 #include "Shader.hpp"
-#include <assimp/types.h>
 
 class Mesh {
 public:
@@ -18,7 +17,7 @@ public:
     struct Texture {
         unsigned int id;
         std::string type;
-        aiString path;
+        std::string path;
     };
 
     Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, std::vector<Texture> textures);

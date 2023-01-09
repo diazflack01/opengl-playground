@@ -20,6 +20,7 @@ private:
     // model data
     std::vector<Mesh> mMeshes;
     std::string mDirectory;
+    std::vector<Mesh::Texture> mLoadedTextures;
 
     void loadModel(std::string path);
     void processNode(aiNode *node, const aiScene *scene);

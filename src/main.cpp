@@ -11,6 +11,7 @@
 #include "Shader.hpp"
 #include "Camera.hpp"
 #include "Utils.hpp"
+#include "Model.hpp"
 
 float deltaTime = 0.0f;	// Time between current frame and last frame
 float lastFrame = 0.0f; // Time of last frame
@@ -94,6 +95,8 @@ int main(int argc, char** argv) {
     // Shader lightShader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/light.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/light.frag"};
     Shader lightShader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/light_phong.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/light_phong.frag"};
     Shader lightSrcShader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/light.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/light_src.frag"};
+    Shader modelShader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/model_loading.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/model_loading.frag"};
+    Model model{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/models/backpack/backpack.obj"};
 
     const float vertices[] = {
             0.5f,  0.5f, 0.0f,  // top right
@@ -329,84 +332,90 @@ int main(int argc, char** argv) {
         const glm::mat4 view = camera.getViewMatrix();
         const glm::mat4 projection = glm::perspective(glm::radians(camera.getFieldOfView()), SCREEN_WIDTH/SCREEN_HEIGTH, 0.1f, 100.0f);
 
-        /*** Light Source ***/
-        lightSrcShader.use();
-        lightSrcShader.setMat4("view", view);
-        lightSrcShader.setMat4("projection", projection);
+        modelShader.use();
+        modelShader.setMat4("model", glm::mat4{1.0f});
+        modelShader.setMat4("view", view);
+        modelShader.setMat4("projection", projection);
+        model.draw(modelShader);
 
-        for (auto i = 0u; i < pointLightPositions.size(); i++) {
-            const glm::mat4 lightModel = [&]{
-                auto model = glm::translate(glm::mat4{1.0f}, pointLightPositions[i]);
-                return glm::scale(model, glm::vec3{0.2f});
-            }();
-            lightSrcShader.setMat4("model", lightModel);
-            glBindVertexArray(lightVAO);
-            glDrawArrays(GL_TRIANGLES, 0, 36);
-        }
-
-        /*** Object/s with lighting shader applied  ***/
-        lightShader.use();
-        lightShader.setMat4("view", view);
-        lightShader.setMat4("projection", projection);
-        const auto camPos = camera.getPosition();
-        lightShader.setVec3Float("viewPos", camPos.x, camPos.y, camPos.z);
-        // object material
-        lightShader.setInt("material.diffuse", 0);
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, woodContainerDiffuseMap->id);
-        lightShader.setInt("material.specular", 1);
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, woodContainerSpecularMap->id);
-        lightShader.setFloat("material.shininess", 32.0f);
-        // directional light
-        constexpr glm::vec3 ambient{0.5f, 0.5f, 0.5f};
-        constexpr glm::vec3 specular{1.0f, 1.0f, 1.0f};
-        lightShader.setVec3Float("directionalLight.ambient",  ambient.x, ambient.y, ambient.z);
-        lightShader.setVec3Float("directionalLight.diffuse",  0.4f, 0.4f, 0.4f);
-        lightShader.setVec3Float("directionalLight.specular", specular.x, specular.y, specular.z);
-        constexpr glm::vec3 lightDirection{-0.2f, -1.0f, -0.3f};
-        lightShader.setVec3Float("directionalLight.direction", lightDirection.x, lightDirection.y, lightDirection.z);
-        // point lights
-        for (auto i = 0u; i < pointLightPositions.size(); i++) {
-            const auto pointLightIdx = [&]{
-                std::string pointLight = "pointLights[";
-                pointLight.append(std::to_string(i));
-                pointLight.append("]");
-                return pointLight;
-            }();
-
-            lightShader.setVec3Float(pointLightIdx + ".ambient",  ambient.x, ambient.y, ambient.z);
-            lightShader.setVec3Float(pointLightIdx + ".diffuse",  0.8, 0.8, 0.8);
-            lightShader.setVec3Float(pointLightIdx + ".specular", specular.x, specular.y, specular.z);
-            lightShader.setFloat(pointLightIdx + ".constant",  1.0f);
-            lightShader.setFloat(pointLightIdx + ".linear",    0.09f);
-            lightShader.setFloat(pointLightIdx + ".quadratic", 0.032f);
-        }
-        // spotlight
-        lightShader.setVec3Float("spotLight.ambient",  0.1f, 0.1f, 0.1f);
-        lightShader.setVec3Float("spotLight.diffuse",  1.0f, 1.0f, 1.0f);
-        lightShader.setVec3Float("spotLight.specular", specular.x, specular.y, specular.z);
-        const auto camFront = camera.getFront();
-        lightShader.setVec3Float("spotLight.direction", camFront.x, camFront.y, camFront.z);
-        lightShader.setVec3Float("spotLight.position", camPos.x, camPos.y, camPos.z);
-        lightShader.setFloat("spotLight.constant", 1.0f);
-        lightShader.setFloat("spotLight.linear", 0.09f);
-        lightShader.setFloat("spotLight.quadratic", 0.032f);
-        lightShader.setFloat("spotLight.cutOff",   glm::cos(glm::radians(12.5f)));
-        lightShader.setFloat("spotLight.outerCutOff",   glm::cos(glm::radians(15.0f)));
-
-        // multiple cube objects
-        glBindVertexArray(VAO);
-        for(unsigned int i = 0; i < 10; i++)
-        {
-            glm::mat4 model = glm::mat4(1.0f);
-            model = glm::translate(model, cubePositions[i]);
-            float angle = 20.0f * i;
-            model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
-            lightShader.setMat4("model", model);
-
-            glDrawArrays(GL_TRIANGLES, 0, 36);
-        }
+//        /*** Light Source ***/
+//        lightSrcShader.use();
+//        lightSrcShader.setMat4("view", view);
+//        lightSrcShader.setMat4("projection", projection);
+//
+//        for (auto i = 0u; i < pointLightPositions.size(); i++) {
+//            const glm::mat4 lightModel = [&]{
+//                auto model = glm::translate(glm::mat4{1.0f}, pointLightPositions[i]);
+//                return glm::scale(model, glm::vec3{0.2f});
+//            }();
+//            lightSrcShader.setMat4("model", lightModel);
+//            glBindVertexArray(lightVAO);
+//            glDrawArrays(GL_TRIANGLES, 0, 36);
+//        }
+//
+//        /*** Object/s with lighting shader applied  ***/
+//        lightShader.use();
+//        lightShader.setMat4("view", view);
+//        lightShader.setMat4("projection", projection);
+//        const auto camPos = camera.getPosition();
+//        lightShader.setVec3Float("viewPos", camPos.x, camPos.y, camPos.z);
+//        // object material
+//        lightShader.setInt("material.diffuse", 0);
+//        glActiveTexture(GL_TEXTURE0);
+//        glBindTexture(GL_TEXTURE_2D, woodContainerDiffuseMap->id);
+//        lightShader.setInt("material.specular", 1);
+//        glActiveTexture(GL_TEXTURE1);
+//        glBindTexture(GL_TEXTURE_2D, woodContainerSpecularMap->id);
+//        lightShader.setFloat("material.shininess", 32.0f);
+//        // directional light
+//        constexpr glm::vec3 ambient{0.5f, 0.5f, 0.5f};
+//        constexpr glm::vec3 specular{1.0f, 1.0f, 1.0f};
+//        lightShader.setVec3Float("directionalLight.ambient",  ambient.x, ambient.y, ambient.z);
+//        lightShader.setVec3Float("directionalLight.diffuse",  0.4f, 0.4f, 0.4f);
+//        lightShader.setVec3Float("directionalLight.specular", specular.x, specular.y, specular.z);
+//        constexpr glm::vec3 lightDirection{-0.2f, -1.0f, -0.3f};
+//        lightShader.setVec3Float("directionalLight.direction", lightDirection.x, lightDirection.y, lightDirection.z);
+//        // point lights
+//        for (auto i = 0u; i < pointLightPositions.size(); i++) {
+//            const auto pointLightIdx = [&]{
+//                std::string pointLight = "pointLights[";
+//                pointLight.append(std::to_string(i));
+//                pointLight.append("]");
+//                return pointLight;
+//            }();
+//
+//            lightShader.setVec3Float(pointLightIdx + ".ambient",  ambient.x, ambient.y, ambient.z);
+//            lightShader.setVec3Float(pointLightIdx + ".diffuse",  0.8, 0.8, 0.8);
+//            lightShader.setVec3Float(pointLightIdx + ".specular", specular.x, specular.y, specular.z);
+//            lightShader.setFloat(pointLightIdx + ".constant",  1.0f);
+//            lightShader.setFloat(pointLightIdx + ".linear",    0.09f);
+//            lightShader.setFloat(pointLightIdx + ".quadratic", 0.032f);
+//        }
+//        // spotlight
+//        lightShader.setVec3Float("spotLight.ambient",  0.1f, 0.1f, 0.1f);
+//        lightShader.setVec3Float("spotLight.diffuse",  1.0f, 1.0f, 1.0f);
+//        lightShader.setVec3Float("spotLight.specular", specular.x, specular.y, specular.z);
+//        const auto camFront = camera.getFront();
+//        lightShader.setVec3Float("spotLight.direction", camFront.x, camFront.y, camFront.z);
+//        lightShader.setVec3Float("spotLight.position", camPos.x, camPos.y, camPos.z);
+//        lightShader.setFloat("spotLight.constant", 1.0f);
+//        lightShader.setFloat("spotLight.linear", 0.09f);
+//        lightShader.setFloat("spotLight.quadratic", 0.032f);
+//        lightShader.setFloat("spotLight.cutOff",   glm::cos(glm::radians(12.5f)));
+//        lightShader.setFloat("spotLight.outerCutOff",   glm::cos(glm::radians(15.0f)));
+//
+//        // multiple cube objects
+//        glBindVertexArray(VAO);
+//        for(unsigned int i = 0; i < 10; i++)
+//        {
+//            glm::mat4 model = glm::mat4(1.0f);
+//            model = glm::translate(model, cubePositions[i]);
+//            float angle = 20.0f * i;
+//            model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
+//            lightShader.setMat4("model", model);
+//
+//            glDrawArrays(GL_TRIANGLES, 0, 36);
+//        }
 
         /*** Multiple Cubes ***/
         // texturedShader.use();

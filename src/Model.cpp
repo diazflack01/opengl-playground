@@ -28,12 +28,14 @@ void Model::processNode(aiNode *node, const aiScene *scene) {
     // process all the node's meshes (if any)
     for(unsigned int i = 0; i < node->mNumMeshes; i++)
     {
+        std::cout << "mNumMeshes " << i << "\n";
         aiMesh *mesh = scene->mMeshes[node->mMeshes[i]];
         mMeshes.push_back(processMesh(mesh, scene));
     }
     // then do the same for each of its children
     for(unsigned int i = 0; i < node->mNumChildren; i++)
     {
+        std::cout << "mNumChildren " << i << "\n";
         processNode(node->mChildren[i], scene);
     }
 }
@@ -87,18 +89,32 @@ std::vector<Mesh::Texture> Model::loadMaterialTextures(aiMaterial *mat, aiTextur
     {
         aiString str;
         mat->GetTexture(type, i, &str);
-        Mesh::Texture texture;
-        const auto textureFullPathToLoad{mDirectory + str.C_Str()};
+
+        bool skip{false};
+
+        const auto textureFullPathToLoad{mDirectory + "/" + str.C_Str()};
         const auto loadedTexture = tryLoadTexture(textureFullPathToLoad);
         if (!loadedTexture.has_value()) {
             std::cerr << "Failed to load texture " << textureFullPathToLoad << "\n";
             continue;
         }
 
-        texture.id = loadedTexture->id;
-        texture.type = typeName;
-        texture.path = str;
-        textures.push_back(texture);
+        // find if existing in cache
+        const auto cachedTexture = std::find_if(mLoadedTextures.begin(), mLoadedTextures.end(), [&](const auto& t){ return t.path == std::string(str.C_Str()); });
+        if (cachedTexture != mLoadedTextures.end()) {
+            skip = true;
+            std::cout << "skip texture loading, already exist in cache id:" << cachedTexture->id << " type:" << cachedTexture->type << " path:" << cachedTexture->path << "\n";
+            textures.emplace_back(*cachedTexture);
+        }
+
+
+        if (!skip) {
+            Mesh::Texture texture{loadedTexture->id, typeName, str.C_Str()};
+            std::cout << "adding texture id:" << texture.id << " type:" << texture.type << " path:" << texture.path << "\n";
+            mLoadedTextures.emplace_back(texture);
+            textures.emplace_back(mLoadedTextures.back());
+        }
     }
+
     return textures;
 }
