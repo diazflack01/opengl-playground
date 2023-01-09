@@ -5,7 +5,11 @@ add_executable(${PROJECT_NAME}
         Camera.cpp
         Camera.hpp
         Mesh.cpp
-        Mesh.hpp)
+        Mesh.hpp
+        Model.cpp
+        Model.hpp
+        Utils.cpp
+        Utils.hpp)
 
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
 target_link_libraries(${PROJECT_NAME} PRIVATE glfw glad stb glm assimp)

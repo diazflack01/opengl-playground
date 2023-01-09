@@ -5,18 +5,12 @@
 #include <glad/glad.h> // needs to be included before glfw
 #include <GLFW/glfw3.h>
 
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb/stb_image.hpp>
-
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "Shader.hpp"
 #include "Camera.hpp"
-
-#include <assimp/Importer.hpp>
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
+#include "Utils.hpp"
 
 float deltaTime = 0.0f;	// Time between current frame and last frame
 float lastFrame = 0.0f; // Time of last frame
@@ -41,16 +35,6 @@ void framebufferSizeCallback(GLFWwindow* window, int width, int height);
 void processKeyboardInputs(GLFWwindow* window);
 void mouseCallback(GLFWwindow* window, double xpos, double ypos);
 void scrollCallback(GLFWwindow* window, double xoffset, double yoffset);
-
-struct TextureContext
-{
-    unsigned int id;
-    int width;
-    int height;
-    int numComponents;
-};
-
-std::optional<TextureContext> tryLoadTexture(const std::string& texturePath);
 
 int main(int argc, char** argv) {
     std::cout << "main()\n";
@@ -85,7 +69,6 @@ int main(int argc, char** argv) {
     glfwSetCursorPosCallback(window, mouseCallback);
     glfwSetScrollCallback(window, scrollCallback);
 
-    stbi_set_flip_vertically_on_load(true);
     const auto textureWoodContainer = tryLoadTexture("/home/kelvin.robles/work/repos/personal/opengl-playground/resources/texture/wooden_container.jpg");
     if (!textureWoodContainer.has_value()) {
         return 1;
@@ -483,35 +466,4 @@ void mouseCallback(GLFWwindow* window, double xpos, double ypos) {
 void scrollCallback(GLFWwindow* window, double xoffset, double yoffset)
 {
     camera.processMouseScroll(yoffset);
-}
-
-std::optional<TextureContext> tryLoadTexture(const std::string& texturePath)
-{
-    unsigned int id;
-    glGenTextures(1, &id);
-    int width, height, nrComponents;
-    unsigned char* data = stbi_load(texturePath.c_str(), &width, &height, &nrComponents, 0);
-    if (data != nullptr) {
-        GLenum format;
-        if (nrComponents == 1)
-            format = GL_RED;
-        else if (nrComponents == 3)
-            format = GL_RGB;
-        else if (nrComponents == 4)
-            format = GL_RGBA;
-
-        glBindTexture(GL_TEXTURE_2D, id);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
-        glGenerateMipmap(GL_TEXTURE_2D);
-    } else {
-        std::cout << "Failed to load texture '" << texturePath << "'\n";
-        return std::nullopt;
-    }
-    stbi_image_free(data);
-
-    return TextureContext{id, width, height, nrComponents};
 }
