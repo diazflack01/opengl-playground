@@ -63,7 +63,7 @@ int main(int argc, char** argv) {
     glViewport(0, 0, 800, 600);
 
     // disable mouse cursor
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    // glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     // event callbacks
     glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
@@ -95,7 +95,7 @@ int main(int argc, char** argv) {
     // Shader lightShader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/light.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/light.frag"};
     Shader lightShader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/light_phong.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/light_phong.frag"};
     Shader lightSrcShader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/light.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/light_src.frag"};
-    Shader modelShader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/model_loading.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/model_loading.frag"};
+    Shader modelShader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/model_loading.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/model_loading_with_lighting.frag"};
     Model model{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/models/backpack/backpack.obj"};
 
     const float vertices[] = {
@@ -332,10 +332,23 @@ int main(int argc, char** argv) {
         const glm::mat4 view = camera.getViewMatrix();
         const glm::mat4 projection = glm::perspective(glm::radians(camera.getFieldOfView()), SCREEN_WIDTH/SCREEN_HEIGTH, 0.1f, 100.0f);
 
+        /*** Model Loading ***/
         modelShader.use();
         modelShader.setMat4("model", glm::mat4{1.0f});
         modelShader.setMat4("view", view);
         modelShader.setMat4("projection", projection);
+        const auto camPos = camera.getPosition();
+        modelShader.setVec3Float("viewPos", camPos.x, camPos.y, camPos.z);
+        // directional light
+        constexpr glm::vec3 ambient{0.5f, 0.5f, 0.5f};
+        constexpr glm::vec3 specular{0.8f, 0.8f, 0.8f};
+        modelShader.setVec3Float("directionalLight.ambient",  ambient.x, ambient.y, ambient.z);
+        modelShader.setVec3Float("directionalLight.diffuse",  0.4f, 0.4f, 0.4f);
+        modelShader.setVec3Float("directionalLight.specular", specular.x, specular.y, specular.z);
+        constexpr glm::vec3 lightDirection{-0.2f, -1.0f, -0.3f};
+        modelShader.setVec3Float("directionalLight.direction", lightDirection.x, lightDirection.y, lightDirection.z);
+        modelShader.setBool("hasSpotLight", false);
+        modelShader.setInt("numPointLights", 0);
         model.draw(modelShader);
 
 //        /*** Light Source ***/

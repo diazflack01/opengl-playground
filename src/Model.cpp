@@ -12,7 +12,7 @@ void Model::draw(Shader &shader) {
 
 void Model::loadModel(std::string path) {
     Assimp::Importer import;
-    const aiScene *scene = import.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
+    const aiScene *scene = import.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_GenNormals);
 
     if(!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
     {
@@ -21,6 +21,8 @@ void Model::loadModel(std::string path) {
     }
     mDirectory = path.substr(0, path.find_last_of('/'));
 
+    std::cout << "Root node meshes: " << scene->mRootNode->mNumMeshes << " children: " << scene->mRootNode->mNumChildren << std::endl;
+
     processNode(scene->mRootNode, scene);
 }
 
@@ -28,14 +30,14 @@ void Model::processNode(aiNode *node, const aiScene *scene) {
     // process all the node's meshes (if any)
     for(unsigned int i = 0; i < node->mNumMeshes; i++)
     {
-        std::cout << "mNumMeshes " << i << "\n";
+        std::cout << "processing mesh: " << i << "\n";
         aiMesh *mesh = scene->mMeshes[node->mMeshes[i]];
         mMeshes.push_back(processMesh(mesh, scene));
     }
     // then do the same for each of its children
     for(unsigned int i = 0; i < node->mNumChildren; i++)
     {
-        std::cout << "mNumChildren " << i << "\n";
+        std::cout << "processing children: " << i << "\n";
         processNode(node->mChildren[i], scene);
     }
 }
