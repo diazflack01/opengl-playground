@@ -11,10 +11,8 @@
 
 class Model {
 public:
-    Model(const char* path)
-    {
-        loadModel(path);
-    }
+    Model(const char* path);
+
     void draw(Shader &shader);
 private:
     // model data

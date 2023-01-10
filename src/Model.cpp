@@ -3,6 +3,11 @@
 #include <iostream>
 
 #include "Utils.hpp"
+#include "ScopedTimer.hpp"
+
+Model::Model(const char *path) {
+    loadModel(path);
+}
 
 void Model::draw(Shader &shader) {
     for (auto idx = 0; idx < mMeshes.size(); idx++) {
@@ -11,6 +16,7 @@ void Model::draw(Shader &shader) {
 }
 
 void Model::loadModel(std::string path) {
+    ScopedTimer timer{std::string{"loadModel - "} + path};
     Assimp::Importer import;
     const aiScene *scene = import.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_GenNormals);
 
