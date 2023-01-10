@@ -72,22 +72,26 @@ int main(int argc, char** argv) {
 
     const auto textureWoodContainer = tryLoadTexture("/home/kelvin.robles/work/repos/personal/opengl-playground/resources/texture/wooden_container.jpg");
     if (!textureWoodContainer.has_value()) {
+        std::cout << "Failed to load texture: /home/kelvin.robles/work/repos/personal/opengl-playground/resources/texture/wooden_container.jpg\n";
         return 1;
-    };
+    }
 
     const auto textureAwesomeFace = tryLoadTexture("/home/kelvin.robles/work/repos/personal/opengl-playground/resources/texture/awesomeface.png");
     if (!textureAwesomeFace.has_value()) {
+        std::cout << "Failed to load texture: /home/kelvin.robles/work/repos/personal/opengl-playground/resources/texture/awesomeface.png\n";
         return 1;
-    };
+    }
 
     const auto woodContainerDiffuseMap = tryLoadTexture("/home/kelvin.robles/work/repos/personal/opengl-playground/resources/texture/container2.png");
     if (!woodContainerDiffuseMap.has_value()) {
+        std::cout << "Failed to load texture: /home/kelvin.robles/work/repos/personal/opengl-playground/resources/texture/container2.png\n";
         return 1;
-    };
+    }
     const auto woodContainerSpecularMap = tryLoadTexture("/home/kelvin.robles/work/repos/personal/opengl-playground/resources/texture/container2_specular.png");
     if (!woodContainerSpecularMap.has_value()) {
+        std::cout << "Failed to load texture: /home/kelvin.robles/work/repos/personal/opengl-playground/resources/texture/container2_specular.png\n";
         return 1;
-    };
+    }
 
     // Shader shader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/basic.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/basic.frag"};
     // Shader shader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/basic_texture.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/basic_texture.frag"};
@@ -96,7 +100,8 @@ int main(int argc, char** argv) {
     Shader lightShader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/light_phong.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/light_phong.frag"};
     Shader lightSrcShader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/light.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/light_src.frag"};
     Shader modelShader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/model_loading.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/model_loading_with_lighting.frag"};
-    Model model{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/models/backpack/backpack.obj"};
+    // Model model{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/models/backpack/backpack.obj"};
+    Shader depthTestingShader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/depth_testing.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/depth_testing.frag"};
 
     const float vertices[] = {
             0.5f,  0.5f, 0.0f,  // top right
@@ -166,6 +171,17 @@ int main(int argc, char** argv) {
             0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
             -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
             -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
+    };
+
+    const float planeVertices[] = {
+            // positions          // texture Coords (note we set these higher than 1 (together with GL_REPEAT as texture wrapping mode). this will cause the floor texture to repeat)
+            5.0f, -0.5f,  5.0f,  2.0f, 0.0f,
+            -5.0f, -0.5f,  5.0f,  0.0f, 0.0f,
+            -5.0f, -0.5f, -5.0f,  0.0f, 2.0f,
+
+            5.0f, -0.5f,  5.0f,  2.0f, 0.0f,
+            -5.0f, -0.5f, -5.0f,  0.0f, 2.0f,
+            5.0f, -0.5f, -5.0f,  2.0f, 2.0f
     };
 
     const float cubeVerticesWithNormals[] = {
@@ -299,8 +315,8 @@ int main(int argc, char** argv) {
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
-     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-     glEnableVertexAttribArray(2);
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+    glEnableVertexAttribArray(2);
     // unbind VAO
     glEnableVertexAttribArray(0);
 
@@ -311,11 +327,54 @@ int main(int argc, char** argv) {
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
+    /*** Depth Testing ***/
+    // cubes
+    unsigned int cubeVAO;
+    glGenVertexArrays(1, &cubeVAO);
+    unsigned int cubeVBO;
+    glGenBuffers(1, &cubeVBO);
+    glBindVertexArray(cubeVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVerticesWithTextureCoords), &cubeVerticesWithTextureCoords, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    glBindVertexArray(0);
+    // floor
+    unsigned int planeVAO;
+    glGenVertexArrays(1, &planeVAO);
+    unsigned int planeVBO;
+    glGenBuffers(1, &planeVBO);
+    glBindVertexArray(planeVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, planeVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(planeVertices), &planeVertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    glBindVertexArray(0);
+    // textures
+    const auto cubeTexture = tryLoadTexture("/home/kelvin.robles/work/repos/personal/opengl-playground/resources/texture/marble.jpg");
+    if (!cubeTexture.has_value()) {
+        std::cout << "Failed to load texture: /home/kelvin.robles/work/repos/personal/opengl-playground/resources/texture/marble.jpg\n";
+        return 1;
+    }
+    const auto floorTexture = tryLoadTexture("/home/kelvin.robles/work/repos/personal/opengl-playground/resources/texture/metal.png");
+    if (!floorTexture.has_value()) {
+        std::cout << "Failed to load texture: /home/kelvin.robles/work/repos/personal/opengl-playground/resources/texture/metal.png\n";
+        return 1;
+    }
+
+    depthTestingShader.use();
+    depthTestingShader.setInt("texture0", 0);
+
     // wireframe
     // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     // z-buffer
     glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
 
     while (!glfwWindowShouldClose(window)) {
         const float currentFrame = glfwGetTime();
@@ -325,31 +384,52 @@ int main(int argc, char** argv) {
         processKeyboardInputs(window);
 
         // Clear color and depth buffer
-        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+        // glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+        glClearColor(0.1f, 0.1f, 0.1f, 1.0f); // depth testing
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // Current cycle camera view and projection
         const glm::mat4 view = camera.getViewMatrix();
         const glm::mat4 projection = glm::perspective(glm::radians(camera.getFieldOfView()), SCREEN_WIDTH/SCREEN_HEIGTH, 0.1f, 100.0f);
 
-        /*** Model Loading ***/
-        modelShader.use();
-        modelShader.setMat4("model", glm::mat4{1.0f});
-        modelShader.setMat4("view", view);
-        modelShader.setMat4("projection", projection);
-        const auto camPos = camera.getPosition();
-        modelShader.setVec3Float("viewPos", camPos.x, camPos.y, camPos.z);
-        // directional light
-        constexpr glm::vec3 ambient{0.5f, 0.5f, 0.5f};
-        constexpr glm::vec3 specular{0.8f, 0.8f, 0.8f};
-        modelShader.setVec3Float("directionalLight.ambient",  ambient.x, ambient.y, ambient.z);
-        modelShader.setVec3Float("directionalLight.diffuse",  0.4f, 0.4f, 0.4f);
-        modelShader.setVec3Float("directionalLight.specular", specular.x, specular.y, specular.z);
-        constexpr glm::vec3 lightDirection{-0.2f, -1.0f, -0.3f};
-        modelShader.setVec3Float("directionalLight.direction", lightDirection.x, lightDirection.y, lightDirection.z);
-        modelShader.setBool("hasSpotLight", false);
-        modelShader.setInt("numPointLights", 0);
-        model.draw(modelShader);
+        /*** Depth Testing ***/
+        depthTestingShader.use();
+        depthTestingShader.setMat4("view", view);
+        depthTestingShader.setMat4("projection", projection);
+        // cubes
+        glBindVertexArray(cubeVAO);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, cubeTexture->id);
+        depthTestingShader.setMat4("model", glm::translate(glm::mat4{1.0f}, glm::vec3(-1.0f, 0.0f, -1.0f)));
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+        depthTestingShader.setMat4("model", glm::translate(glm::mat4{1.0f}, glm::vec3(2.0f, 0.0f, 0.0f)));
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+        // floor
+        glBindVertexArray(planeVAO);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, floorTexture->id);
+        depthTestingShader.setMat4("model", glm::mat4{1.0f});
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+
+
+//        /*** Model Loading ***/
+//        modelShader.use();
+//        modelShader.setMat4("model", glm::mat4{1.0f});
+//        modelShader.setMat4("view", view);
+//        modelShader.setMat4("projection", projection);
+//        const auto camPos = camera.getPosition();
+//        modelShader.setVec3Float("viewPos", camPos.x, camPos.y, camPos.z);
+//        // directional light
+//        constexpr glm::vec3 ambient{0.5f, 0.5f, 0.5f};
+//        constexpr glm::vec3 specular{0.8f, 0.8f, 0.8f};
+//        modelShader.setVec3Float("directionalLight.ambient",  ambient.x, ambient.y, ambient.z);
+//        modelShader.setVec3Float("directionalLight.diffuse",  0.4f, 0.4f, 0.4f);
+//        modelShader.setVec3Float("directionalLight.specular", specular.x, specular.y, specular.z);
+//        constexpr glm::vec3 lightDirection{-0.2f, -1.0f, -0.3f};
+//        modelShader.setVec3Float("directionalLight.direction", lightDirection.x, lightDirection.y, lightDirection.z);
+//        modelShader.setBool("hasSpotLight", false);
+//        modelShader.setInt("numPointLights", 0);
+//        model.draw(modelShader);
 
 //        /*** Light Source ***/
 //        lightSrcShader.use();
@@ -457,6 +537,12 @@ int main(int argc, char** argv) {
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
+
+    // depth testing
+    glDeleteVertexArrays(1, &cubeVAO);
+    glDeleteVertexArrays(1, &planeVAO);
+    glDeleteBuffers(1, &cubeVBO);
+    glDeleteBuffers(1, &planeVBO);
 
     glfwTerminate();
     return 0;

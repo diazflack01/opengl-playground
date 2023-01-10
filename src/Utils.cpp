@@ -30,11 +30,11 @@ std::optional<TextureContext> tryLoadTexture(const std::string& texturePath, boo
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
         glGenerateMipmap(GL_TEXTURE_2D);
+        stbi_image_free(data);
     } else {
         std::cout << "Failed to load texture '" << texturePath << "'\n";
         return std::nullopt;
     }
-    stbi_image_free(data);
 
     return TextureContext{id, width, height, nrComponents};
 }
