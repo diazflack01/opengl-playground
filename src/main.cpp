@@ -102,6 +102,8 @@ int main(int argc, char** argv) {
     Shader modelShader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/model_loading.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/model_loading_with_lighting.frag"};
     // Model model{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/models/backpack/backpack.obj"};
     Shader depthTestingShader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/depth_testing.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/depth_testing.frag"};
+    Shader stencilTestingShader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/stencil_testing.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/stencil_testing.frag"};
+    Shader stencilTestingSingleColorShader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/stencil_testing.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/stencil_testing.frag"};
 
     const float vertices[] = {
             0.5f,  0.5f, 0.0f,  // top right
@@ -386,33 +388,74 @@ int main(int argc, char** argv) {
         // Clear color and depth buffer
         // glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f); // depth testing
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
         // Current cycle camera view and projection
         const glm::mat4 view = camera.getViewMatrix();
         const glm::mat4 projection = glm::perspective(glm::radians(camera.getFieldOfView()), SCREEN_WIDTH/SCREEN_HEIGTH, 0.1f, 100.0f);
 
         /*** Depth Testing ***/
-        depthTestingShader.use();
-        depthTestingShader.setMat4("view", view);
-        depthTestingShader.setMat4("projection", projection);
-        // cubes
-        glBindVertexArray(cubeVAO);
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, cubeTexture->id);
-        depthTestingShader.setMat4("model", glm::translate(glm::mat4{1.0f}, glm::vec3(-1.0f, 0.0f, -1.0f)));
-        glDrawArrays(GL_TRIANGLES, 0, 36);
-        depthTestingShader.setMat4("model", glm::translate(glm::mat4{1.0f}, glm::vec3(2.0f, 0.0f, 0.0f)));
-        glDrawArrays(GL_TRIANGLES, 0, 36);
-        // floor
+//        depthTestingShader.use();
+//        depthTestingShader.setMat4("view", view);
+//        depthTestingShader.setMat4("projection", projection);
+//        // cubes
+//        glBindVertexArray(cubeVAO);
+//        glActiveTexture(GL_TEXTURE0);
+//        glBindTexture(GL_TEXTURE_2D, cubeTexture->id);
+//        depthTestingShader.setMat4("model", glm::translate(glm::mat4{1.0f}, glm::vec3(-1.0f, 0.0f, -1.0f)));
+//        glDrawArrays(GL_TRIANGLES, 0, 36);
+//        depthTestingShader.setMat4("model", glm::translate(glm::mat4{1.0f}, glm::vec3(2.0f, 0.0f, 0.0f)));
+//        glDrawArrays(GL_TRIANGLES, 0, 36);
+//        // floor
+//        glBindVertexArray(planeVAO);
+//        glActiveTexture(GL_TEXTURE0);
+//        glBindTexture(GL_TEXTURE_2D, floorTexture->id);
+//        depthTestingShader.setMat4("model", glm::mat4{1.0f});
+//        glDrawArrays(GL_TRIANGLES, 0, 6);
+
+        /*** Stencil Testing ***/
+        stencilTestingShader.use();
+        stencilTestingShader.setMat4("view", view);
+        stencilTestingShader.setMat4("projection", projection);
+        glEnable(GL_STENCIL_TEST);
+        glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE); // when both depth & stencil test passed, write stencil value equal to `REF` which is 1
+        // draw floor
         glBindVertexArray(planeVAO);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, floorTexture->id);
-        depthTestingShader.setMat4("model", glm::mat4{1.0f});
+        stencilTestingShader.setMat4("model", glm::mat4{1.0f});
+        glStencilMask(0x00); // AND bit mask will always make the value to be written 0
         glDrawArrays(GL_TRIANGLES, 0, 6);
+        // draw cube with stencil write on
+        glBindVertexArray(cubeVAO);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, cubeTexture->id);
+        glStencilFunc(GL_ALWAYS, 1, 0xFF); // all drawn fragments will pass stencil testing
+        glStencilMask(0xFF); // AND bit mask now will write whatever stencil value is to be written
+        stencilTestingShader.setMat4("model", glm::translate(glm::mat4{1.0f}, glm::vec3(-1.0f, 0.0f, -1.0f)));
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+        stencilTestingShader.setMat4("model", glm::translate(glm::mat4{1.0f}, glm::vec3(2.0f, 0.0f, 0.0f)));
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+        // draw up-scaled colored cube with border with stencil write off
+        stencilTestingSingleColorShader.use();
+        stencilTestingSingleColorShader.setMat4("view", view);
+        stencilTestingSingleColorShader.setMat4("projection", projection);
+        stencilTestingSingleColorShader.setBool("useUniformColor", true);
+        stencilTestingSingleColorShader.setVec3Float("color", 1.0, 0.0, 0.0);
+        glStencilFunc(GL_NOTEQUAL, 1, 0xFF); // stored fragments with stencil buffer not equal to 1 will pass
+        glStencilMask(0x00); // AND bit mask will always make the value to be written 0
+        glDisable(GL_DEPTH_TEST); // disable depth testing to make sure the border will always be drawn over the cubes, even if it's behind/below the floor
+        stencilTestingSingleColorShader.setMat4("model", glm::scale(glm::translate(glm::mat4{1.0f}, glm::vec3(-1.0f, 0.0f, -1.0f)), glm::vec3(1.1f, 1.1f, 1.1f)));
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+        stencilTestingSingleColorShader.setMat4("model", glm::scale(glm::translate(glm::mat4{1.0f}, glm::vec3(2.0f, 0.0f, 0.0f)), glm::vec3(1.1f, 1.1f, 1.1f)));
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+        // reset back to default
+        glEnable(GL_DEPTH_TEST);
+        // TODO: Understand how the below really affects glClear(GL_STENCIL_BUFFER_BIT)
+        glStencilFunc(GL_ALWAYS, 1, 0xFF); // this also seems to influence glClear(GL_STENCIL_BUFFER_BIT)
+        glStencilMask(0xFF); // glClear(GL_STENCIL_BUFFER_BIT) seems to not work properly without this
 
-
-//        /*** Model Loading ***/
+        /*** Model Loading ***/
 //        modelShader.use();
 //        modelShader.setMat4("model", glm::mat4{1.0f});
 //        modelShader.setMat4("view", view);
@@ -431,7 +474,7 @@ int main(int argc, char** argv) {
 //        modelShader.setInt("numPointLights", 0);
 //        model.draw(modelShader);
 
-//        /*** Light Source ***/
+        /*** Light Source ***/
 //        lightSrcShader.use();
 //        lightSrcShader.setMat4("view", view);
 //        lightSrcShader.setMat4("projection", projection);
@@ -445,8 +488,8 @@ int main(int argc, char** argv) {
 //            glBindVertexArray(lightVAO);
 //            glDrawArrays(GL_TRIANGLES, 0, 36);
 //        }
-//
-//        /*** Object/s with lighting shader applied  ***/
+
+        /*** Object/s with lighting shader applied  ***/
 //        lightShader.use();
 //        lightShader.setMat4("view", view);
 //        lightShader.setMat4("projection", projection);
