@@ -19,6 +19,10 @@ float lastFrame = 0.0f; // Time of last frame
 const float SCREEN_WIDTH = 800.0f;
 const float SCREEN_HEIGTH = 600.0f;
 
+bool showAxisArrows = false;
+bool disableCursor = true;
+bool lastDisableCursor = disableCursor;
+
 Camera::ConfigState cameraConfig{
         glm::vec3(0.0f, 0.0f,  8.0f),
         glm::vec3(0.0f, 0.0f, -1.0f),
@@ -34,6 +38,7 @@ Camera camera{cameraConfig};
 
 void framebufferSizeCallback(GLFWwindow* window, int width, int height);
 void processKeyboardInputs(GLFWwindow* window);
+void keyboardCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 void mouseCallback(GLFWwindow* window, double xpos, double ypos);
 void scrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 
@@ -62,13 +67,14 @@ int main(int argc, char** argv) {
 
     glViewport(0, 0, 800, 600);
 
-    // disable mouse cursor
-    // glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    // disable mouse cursor by default;
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     // event callbacks
     glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
     glfwSetCursorPosCallback(window, mouseCallback);
     glfwSetScrollCallback(window, scrollCallback);
+    glfwSetKeyCallback(window, keyboardCallback);
 
     const auto textureWoodContainer = tryLoadTexture("/home/kelvin.robles/work/repos/personal/opengl-playground/resources/texture/wooden_container.jpg");
     if (!textureWoodContainer.has_value()) {
@@ -329,6 +335,34 @@ int main(int argc, char** argv) {
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
+    /*** 3D axis arrows ***/
+    constexpr float axisArrowVertices[] = {
+            0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
+            1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
+            0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f,
+            0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
+            0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+            0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f,
+    };
+
+    unsigned int axisArrowsVAO;
+    glGenVertexArrays(1, & axisArrowsVAO);
+    unsigned int axisArrowsVBO;
+    glGenBuffers(1, &axisArrowsVBO);
+    glBindVertexArray(axisArrowsVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, axisArrowsVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(axisArrowVertices), axisArrowVertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(0 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(0);
+    glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    Shader axisArrowShader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/axis_arrow.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/axis_arrow.frag"};
+    glEnable(GL_LINE_SMOOTH); // line anti-aliasing
+
     /*** Depth Testing ***/
     // cubes
     unsigned int cubeVAO;
@@ -384,6 +418,11 @@ int main(int argc, char** argv) {
         lastFrame = currentFrame;
 
         processKeyboardInputs(window);
+
+        if (lastDisableCursor != disableCursor) {
+            glfwSetInputMode(window, GLFW_CURSOR, disableCursor ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
+            lastDisableCursor = disableCursor;
+        }
 
         // Clear color and depth buffer
         // glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
@@ -577,6 +616,18 @@ int main(int argc, char** argv) {
         // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
         // glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
+        /*** 3D axis arrows ***/
+        if (showAxisArrows) {
+            axisArrowShader.use();
+            axisArrowShader.setMat4("model", glm::mat4(1.0f));
+            axisArrowShader.setMat4("view", view);
+            axisArrowShader.setMat4("projection", projection);
+            glBindVertexArray(axisArrowsVAO);
+            glLineWidth(4);
+            glDrawArrays(GL_LINES, 0, 6);
+            glBindVertexArray(0);
+        }
+
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
@@ -608,6 +659,40 @@ void processKeyboardInputs(GLFWwindow* window) {
         camera.processMovement(Camera::Movement::Left, deltaTime);
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
         camera.processMovement(Camera::Movement::Right, deltaTime);
+}
+
+void keyboardCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+    const auto actionStr = [&]{
+        switch (action) {
+            case GLFW_PRESS:
+                return "GLFW_PRESS";
+            case GLFW_RELEASE:
+                return "GLFW_RELEASE";
+            case GLFW_REPEAT:
+                return "GLFW_REPEAT";
+            default:
+                return "Unknown";
+        }
+    }();
+
+    // handle toggles here, since `processKeyboardInputs` is being called multiple times in a single frame
+    if (action == GLFW_PRESS) {
+        std::optional<std::string> keyStr;
+        switch (key) {
+            case GLFW_KEY_H:
+                keyStr = "H";
+                showAxisArrows = !showAxisArrows;
+                break;
+            case GLFW_KEY_J:
+                keyStr = "J";
+                disableCursor = !disableCursor;
+                break;
+        }
+
+        if (keyStr.has_value()) {
+            std::cout << "keyboardCallback " << actionStr << " " << keyStr.value() << "\n";
+        }
+    }
 }
 
 void mouseCallback(GLFWwindow* window, double xpos, double ypos) {
