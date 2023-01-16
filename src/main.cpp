@@ -451,6 +451,11 @@ int main(int argc, char** argv) {
         std::cout << "Failed to load texture: /home/kelvin.robles/work/repos/personal/opengl-playground/resources/texture/grass.png\n";
         return 1;
     }
+    const auto transparentWindowTexture = tryLoadTexture("/home/kelvin.robles/work/repos/personal/opengl-playground/resources/texture/blending_transparent_window.png", textureLoadConfig);
+    if (!transparentWindowTexture.has_value()) {
+        std::cout << "Failed to load texture: /home/kelvin.robles/work/repos/personal/opengl-playground/resources/texture/blending_transparent_window.png\n";
+        return 1;
+    }
 
     Shader blendingShader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/blending.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/blending.frag"};
     blendingShader.use();
@@ -521,12 +526,27 @@ int main(int argc, char** argv) {
         glDrawArrays(GL_TRIANGLES, 0, 36);
         blendingShader.setMat4("model", glm::translate(glm::mat4{1.0f}, glm::vec3(2.0f, 0.0f, 0.0f)));
         glDrawArrays(GL_TRIANGLES, 0, 36);
-        // draw grass
+        // draw grass or window
         glBindVertexArray(grassVAO);
         glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, grassTexture->id);
-        for (auto idx = 0u; idx < vegetation.size(); idx++) {
-            blendingShader.setMat4("model", glm::translate(glm::mat4(1.0f), vegetation[idx]));
+//        glBindTexture(GL_TEXTURE_2D, grassTexture->id);
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glBindTexture(GL_TEXTURE_2D, transparentWindowTexture->id);
+        std::vector<int> numbers = {5, 3 , 2, 1, 69};
+        std::sort(numbers.begin(), numbers.end(), [](const auto& l, const auto& r){
+            return l < r;
+        });
+        // sort from farthest to nearest position, so depth test won't interfere with blending
+        auto sortedPosition = vegetation;
+        std::sort(sortedPosition.begin(), sortedPosition.end(), [camPos = camera.getPosition()](const auto& left, const auto& right){
+            const auto leftDist = glm::distance(camPos, left);
+            const auto rightDist = glm::distance(camPos, right);
+            return leftDist > rightDist;
+        });
+        for (auto idx = 0u; idx < sortedPosition.size(); idx++) {
+            blendingShader.setMat4("model", glm::translate(glm::mat4(1.0f), sortedPosition[idx]));
+            std::cout << numbers[idx] << std::endl;
             glDrawArrays(GL_TRIANGLES, 0, 6);
         }
 
