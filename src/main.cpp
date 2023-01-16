@@ -621,6 +621,7 @@ int main(int argc, char** argv) {
 
         /*** Depth Testing ***/
         depthTestingShader.use();
+//        depthTestingShader.setBool("visualizeDepthLinear", true);
         depthTestingShader.setMat4("view", view);
         depthTestingShader.setMat4("projection", projection);
         // cubes
