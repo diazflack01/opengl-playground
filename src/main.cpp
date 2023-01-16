@@ -19,7 +19,7 @@ float lastFrame = 0.0f; // Time of last frame
 const float SCREEN_WIDTH = 800.0f;
 const float SCREEN_HEIGTH = 600.0f;
 
-bool showAxisArrows = false;
+bool showAxisArrows = true;
 bool disableCursor = true;
 bool lastDisableCursor = disableCursor;
 
@@ -405,6 +405,57 @@ int main(int argc, char** argv) {
     depthTestingShader.use();
     depthTestingShader.setInt("texture0", 0);
 
+    /*** Blending ***/
+    constexpr float transparentVertices[] = {
+            // positions         // texture Coords (swapped y coordinates because texture is flipped upside down)
+            0.0f,  0.5f,  0.0f,  0.0f,  0.0f,
+            0.0f, -0.5f,  0.0f,  0.0f,  1.0f,
+            1.0f, -0.5f,  0.0f,  1.0f,  1.0f,
+
+            0.0f,  0.5f,  0.0f,  0.0f,  0.0f,
+            1.0f, -0.5f,  0.0f,  1.0f,  1.0f,
+            1.0f,  0.5f,  0.0f,  1.0f,  0.0f
+    };
+
+    std::vector<glm::vec3> vegetation
+    {
+            glm::vec3(-1.5f, 0.0f, -0.48f),
+            glm::vec3( 1.5f, 0.0f, 0.51f),
+            glm::vec3( 0.0f, 0.0f, 0.7f),
+            glm::vec3(-0.3f, 0.0f, -2.3f),
+            glm::vec3 (0.5f, 0.0f, -0.6f)
+    };
+
+    unsigned grassVAO;
+    glGenVertexArrays(1, &grassVAO);
+    glBindVertexArray(grassVAO);
+    unsigned grassVBO;
+    glGenBuffers(1, &grassVBO);
+    glBindBuffer(GL_ARRAY_BUFFER, grassVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(transparentVertices), transparentVertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(0 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    glBindVertexArray(0);
+
+    const auto textureLoadConfig = []{
+        TextureLoadConfig loadConfig;
+        loadConfig.flipVertically = false;
+        loadConfig.wrapS = GL_CLAMP_TO_EDGE;
+        loadConfig.wrapT = GL_CLAMP_TO_EDGE;
+        return loadConfig;
+    }();
+    const auto grassTexture = tryLoadTexture("/home/kelvin.robles/work/repos/personal/opengl-playground/resources/texture/grass.png", textureLoadConfig);
+    if (!grassTexture.has_value()) {
+        std::cout << "Failed to load texture: /home/kelvin.robles/work/repos/personal/opengl-playground/resources/texture/grass.png\n";
+        return 1;
+    }
+
+    Shader blendingShader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/blending.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/blending.frag"};
+    blendingShader.use();
+    blendingShader.setInt("texture0", 1);
+
     // wireframe
     // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
@@ -452,47 +503,74 @@ int main(int argc, char** argv) {
 //        depthTestingShader.setMat4("model", glm::mat4{1.0f});
 //        glDrawArrays(GL_TRIANGLES, 0, 6);
 
-        /*** Stencil Testing ***/
-        stencilTestingShader.use();
-        stencilTestingShader.setMat4("view", view);
-        stencilTestingShader.setMat4("projection", projection);
-        glEnable(GL_STENCIL_TEST);
-        glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE); // when both depth & stencil test passed, write stencil value equal to `REF` which is 1
+        /*** Blending ***/
+        blendingShader.use();
+        blendingShader.setMat4("view", view);
+        blendingShader.setMat4("projection", projection);
         // draw floor
         glBindVertexArray(planeVAO);
-        glActiveTexture(GL_TEXTURE0);
+        glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, floorTexture->id);
-        stencilTestingShader.setMat4("model", glm::mat4{1.0f});
-        glStencilMask(0x00); // AND bit mask will always make the value to be written 0
+        blendingShader.setMat4("model", glm::mat4{1.0f});
         glDrawArrays(GL_TRIANGLES, 0, 6);
-        // draw cube with stencil write on
+        // draw cubes
         glBindVertexArray(cubeVAO);
-        glActiveTexture(GL_TEXTURE0);
+        glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, cubeTexture->id);
-        glStencilFunc(GL_ALWAYS, 1, 0xFF); // all drawn fragments will pass stencil testing
-        glStencilMask(0xFF); // AND bit mask now will write whatever stencil value is to be written
-        stencilTestingShader.setMat4("model", glm::translate(glm::mat4{1.0f}, glm::vec3(-1.0f, 0.0f, -1.0f)));
+        blendingShader.setMat4("model", glm::translate(glm::mat4{1.0f}, glm::vec3(-1.0f, 0.0f, -1.0f)));
         glDrawArrays(GL_TRIANGLES, 0, 36);
-        stencilTestingShader.setMat4("model", glm::translate(glm::mat4{1.0f}, glm::vec3(2.0f, 0.0f, 0.0f)));
+        blendingShader.setMat4("model", glm::translate(glm::mat4{1.0f}, glm::vec3(2.0f, 0.0f, 0.0f)));
         glDrawArrays(GL_TRIANGLES, 0, 36);
-        // draw up-scaled colored cube with border with stencil write off
-        stencilTestingSingleColorShader.use();
-        stencilTestingSingleColorShader.setMat4("view", view);
-        stencilTestingSingleColorShader.setMat4("projection", projection);
-        stencilTestingSingleColorShader.setBool("useUniformColor", true);
-        stencilTestingSingleColorShader.setVec3Float("color", 1.0, 0.0, 0.0);
-        glStencilFunc(GL_NOTEQUAL, 1, 0xFF); // stored fragments with stencil buffer not equal to 1 will pass
-        glStencilMask(0x00); // AND bit mask will always make the value to be written 0
-        glDisable(GL_DEPTH_TEST); // disable depth testing to make sure the border will always be drawn over the cubes, even if it's behind/below the floor
-        stencilTestingSingleColorShader.setMat4("model", glm::scale(glm::translate(glm::mat4{1.0f}, glm::vec3(-1.0f, 0.0f, -1.0f)), glm::vec3(1.1f, 1.1f, 1.1f)));
-        glDrawArrays(GL_TRIANGLES, 0, 36);
-        stencilTestingSingleColorShader.setMat4("model", glm::scale(glm::translate(glm::mat4{1.0f}, glm::vec3(2.0f, 0.0f, 0.0f)), glm::vec3(1.1f, 1.1f, 1.1f)));
-        glDrawArrays(GL_TRIANGLES, 0, 36);
-        // reset back to default
-        glEnable(GL_DEPTH_TEST);
-        // TODO: Understand how the below really affects glClear(GL_STENCIL_BUFFER_BIT)
-        glStencilFunc(GL_ALWAYS, 1, 0xFF); // this also seems to influence glClear(GL_STENCIL_BUFFER_BIT)
-        glStencilMask(0xFF); // glClear(GL_STENCIL_BUFFER_BIT) seems to not work properly without this
+        // draw grass
+        glBindVertexArray(grassVAO);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, grassTexture->id);
+        for (auto idx = 0u; idx < vegetation.size(); idx++) {
+            blendingShader.setMat4("model", glm::translate(glm::mat4(1.0f), vegetation[idx]));
+            glDrawArrays(GL_TRIANGLES, 0, 6);
+        }
+
+        /*** Stencil Testing ***/
+//        stencilTestingShader.use();
+//        stencilTestingShader.setMat4("view", view);
+//        stencilTestingShader.setMat4("projection", projection);
+//        glEnable(GL_STENCIL_TEST);
+//        glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE); // when both depth & stencil test passed, write stencil value equal to `REF` which is 1
+//        // draw floor
+//        glBindVertexArray(planeVAO);
+//        glActiveTexture(GL_TEXTURE0);
+//        glBindTexture(GL_TEXTURE_2D, floorTexture->id);
+//        stencilTestingShader.setMat4("model", glm::mat4{1.0f});
+//        glStencilMask(0x00); // AND bit mask will always make the value to be written 0
+//        glDrawArrays(GL_TRIANGLES, 0, 6);
+//        // draw cube with stencil write on
+//        glBindVertexArray(cubeVAO);
+//        glActiveTexture(GL_TEXTURE0);
+//        glBindTexture(GL_TEXTURE_2D, cubeTexture->id);
+//        glStencilFunc(GL_ALWAYS, 1, 0xFF); // all drawn fragments will pass stencil testing
+//        glStencilMask(0xFF); // AND bit mask now will write whatever stencil value is to be written
+//        stencilTestingShader.setMat4("model", glm::translate(glm::mat4{1.0f}, glm::vec3(-1.0f, 0.0f, -1.0f)));
+//        glDrawArrays(GL_TRIANGLES, 0, 36);
+//        stencilTestingShader.setMat4("model", glm::translate(glm::mat4{1.0f}, glm::vec3(2.0f, 0.0f, 0.0f)));
+//        glDrawArrays(GL_TRIANGLES, 0, 36);
+//        // draw up-scaled colored cube with border with stencil write off
+//        stencilTestingSingleColorShader.use();
+//        stencilTestingSingleColorShader.setMat4("view", view);
+//        stencilTestingSingleColorShader.setMat4("projection", projection);
+//        stencilTestingSingleColorShader.setBool("useUniformColor", true);
+//        stencilTestingSingleColorShader.setVec3Float("color", 1.0, 0.0, 0.0);
+//        glStencilFunc(GL_NOTEQUAL, 1, 0xFF); // stored fragments with stencil buffer not equal to 1 will pass
+//        glStencilMask(0x00); // AND bit mask will always make the value to be written 0
+//        glDisable(GL_DEPTH_TEST); // disable depth testing to make sure the border will always be drawn over the cubes, even if it's behind/below the floor
+//        stencilTestingSingleColorShader.setMat4("model", glm::scale(glm::translate(glm::mat4{1.0f}, glm::vec3(-1.0f, 0.0f, -1.0f)), glm::vec3(1.1f, 1.1f, 1.1f)));
+//        glDrawArrays(GL_TRIANGLES, 0, 36);
+//        stencilTestingSingleColorShader.setMat4("model", glm::scale(glm::translate(glm::mat4{1.0f}, glm::vec3(2.0f, 0.0f, 0.0f)), glm::vec3(1.1f, 1.1f, 1.1f)));
+//        glDrawArrays(GL_TRIANGLES, 0, 36);
+//        // reset back to default
+//        glEnable(GL_DEPTH_TEST);
+//        // TODO: Understand how the below really affects glClear(GL_STENCIL_BUFFER_BIT)
+//        glStencilFunc(GL_ALWAYS, 1, 0xFF); // this also seems to influence glClear(GL_STENCIL_BUFFER_BIT)
+//        glStencilMask(0xFF); // glClear(GL_STENCIL_BUFFER_BIT) seems to not work properly without this
 
         /*** Model Loading ***/
 //        modelShader.use();
