@@ -22,6 +22,8 @@ const float SCREEN_HEIGTH = 600.0f;
 bool showAxisArrows = true;
 bool disableCursor = true;
 bool lastDisableCursor = disableCursor;
+bool drawWireFrame = false;
+bool lastDrawWireFrame = drawWireFrame;
 
 Camera::ConfigState cameraConfig{
         glm::vec3(0.0f, 0.0f,  8.0f),
@@ -51,7 +53,7 @@ int main(int argc, char** argv) {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    GLFWwindow* window = glfwCreateWindow(800, 600, "LearnOpenGL", nullptr, nullptr);
+    GLFWwindow* window = glfwCreateWindow(SCREEN_WIDTH, SCREEN_HEIGTH, "LearnOpenGL", nullptr, nullptr);
     if (window == nullptr) {
         std::cout << "Failed to create GLFW window\n";
         glfwTerminate();
@@ -65,7 +67,7 @@ int main(int argc, char** argv) {
         return -1;
     }
 
-    glViewport(0, 0, 800, 600);
+    glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGTH);
 
     // disable mouse cursor by default;
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -463,68 +465,122 @@ int main(int argc, char** argv) {
 
     /*** Face Culling ***/
     // CCW - to create this, one should imagine being in front of the face and labeling the vertices in CCW
-    constexpr float cubeVerticesCCW[] = {
-            // Back face
-            -0.5f, -0.5f, -0.5f,  0.0f, 0.0f, // Bottom-left
-            0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-right
-            0.5f, -0.5f, -0.5f,  1.0f, 0.0f, // bottom-right
-            0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-right
-            -0.5f, -0.5f, -0.5f,  0.0f, 0.0f, // bottom-left
-            -0.5f,  0.5f, -0.5f,  0.0f, 1.0f, // top-left
-            // Front face
-            -0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-left
-            0.5f, -0.5f,  0.5f,  1.0f, 0.0f, // bottom-right
-            0.5f,  0.5f,  0.5f,  1.0f, 1.0f, // top-right
-            0.5f,  0.5f,  0.5f,  1.0f, 1.0f, // top-right
-            -0.5f,  0.5f,  0.5f,  0.0f, 1.0f, // top-left
-            -0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-left
-            // Left face
-            -0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // top-right
-            -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-left
-            -0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // bottom-left
-            -0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // bottom-left
-            -0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-right
-            -0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // top-right
-            // Right face
-            0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // top-left
-            0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // bottom-right
-            0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-right
-            0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // bottom-right
-            0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // top-left
-            0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-left
-            // Bottom face
-            -0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // top-right
-            0.5f, -0.5f, -0.5f,  1.0f, 1.0f, // top-left
-            0.5f, -0.5f,  0.5f,  1.0f, 0.0f, // bottom-left
-            0.5f, -0.5f,  0.5f,  1.0f, 0.0f, // bottom-left
-            -0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-right
-            -0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // top-right
-            // Top face
-            -0.5f,  0.5f, -0.5f,  0.0f, 1.0f, // top-left
-            0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // bottom-right
-            0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-right
-            0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // bottom-right
-            -0.5f,  0.5f, -0.5f,  0.0f, 1.0f, // top-left
-            -0.5f,  0.5f,  0.5f,  0.0f, 0.0f  // bottom-left
-    };
-    unsigned cubeCCWFaceCullingVAO;
-    glGenVertexArrays(1, &cubeCCWFaceCullingVAO);
-    glBindVertexArray(cubeCCWFaceCullingVAO);
-    unsigned cubeCCWFaceCullingVBO;
-    glGenBuffers(1, &cubeCCWFaceCullingVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVerticesCCW), cubeVerticesCCW, GL_STATIC_DRAW);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(0 * sizeof(float)));
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-    glEnableVertexAttribArray(0);
-    // intentionally cull front-face
-    glEnable(GL_CULL_FACE);
-    glCullFace(GL_FRONT);
-    glFrontFace(GL_CCW);
+//    constexpr float cubeVerticesCCW[] = {
+//            // Back face
+//            -0.5f, -0.5f, -0.5f,  0.0f, 0.0f, // Bottom-left
+//            0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-right
+//            0.5f, -0.5f, -0.5f,  1.0f, 0.0f, // bottom-right
+//            0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-right
+//            -0.5f, -0.5f, -0.5f,  0.0f, 0.0f, // bottom-left
+//            -0.5f,  0.5f, -0.5f,  0.0f, 1.0f, // top-left
+//            // Front face
+//            -0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-left
+//            0.5f, -0.5f,  0.5f,  1.0f, 0.0f, // bottom-right
+//            0.5f,  0.5f,  0.5f,  1.0f, 1.0f, // top-right
+//            0.5f,  0.5f,  0.5f,  1.0f, 1.0f, // top-right
+//            -0.5f,  0.5f,  0.5f,  0.0f, 1.0f, // top-left
+//            -0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-left
+//            // Left face
+//            -0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // top-right
+//            -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-left
+//            -0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // bottom-left
+//            -0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // bottom-left
+//            -0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-right
+//            -0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // top-right
+//            // Right face
+//            0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // top-left
+//            0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // bottom-right
+//            0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-right
+//            0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // bottom-right
+//            0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // top-left
+//            0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-left
+//            // Bottom face
+//            -0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // top-right
+//            0.5f, -0.5f, -0.5f,  1.0f, 1.0f, // top-left
+//            0.5f, -0.5f,  0.5f,  1.0f, 0.0f, // bottom-left
+//            0.5f, -0.5f,  0.5f,  1.0f, 0.0f, // bottom-left
+//            -0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-right
+//            -0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // top-right
+//            // Top face
+//            -0.5f,  0.5f, -0.5f,  0.0f, 1.0f, // top-left
+//            0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // bottom-right
+//            0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-right
+//            0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // bottom-right
+//            -0.5f,  0.5f, -0.5f,  0.0f, 1.0f, // top-left
+//            -0.5f,  0.5f,  0.5f,  0.0f, 0.0f  // bottom-left
+//    };
+//    unsigned cubeCCWFaceCullingVAO;
+//    glGenVertexArrays(1, &cubeCCWFaceCullingVAO);
+//    glBindVertexArray(cubeCCWFaceCullingVAO);
+//    unsigned cubeCCWFaceCullingVBO;
+//    glGenBuffers(1, &cubeCCWFaceCullingVBO);
+//    glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVerticesCCW), cubeVerticesCCW, GL_STATIC_DRAW);
+//    glEnableVertexAttribArray(0);
+//    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(0 * sizeof(float)));
+//    glEnableVertexAttribArray(1);
+//    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+//    glEnableVertexAttribArray(0);
+//    // intentionally cull front-face
+//    glEnable(GL_CULL_FACE);
+//    glCullFace(GL_FRONT);
+//    glFrontFace(GL_CCW);
 
-    // wireframe
-    // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    /*** Framebuffer ***/
+    // TODO: Handle resizing of window
+    // texture attachment for color buffer
+    unsigned fboColorTextureAttachment;
+    glGenTextures(1, &fboColorTextureAttachment);
+    glBindTexture(GL_TEXTURE_2D, fboColorTextureAttachment);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, SCREEN_WIDTH, SCREEN_HEIGTH, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    // renderbuffer attachment for depth & stencil buffer
+    unsigned fboDepthStencilRboAttachment;
+    glGenRenderbuffers(1, &fboDepthStencilRboAttachment);
+    glBindRenderbuffer(GL_RENDERBUFFER, fboDepthStencilRboAttachment);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, SCREEN_WIDTH, SCREEN_HEIGTH);
+    glBindRenderbuffer(GL_RENDERBUFFER, 0);
+    // framebuffer setup & adding attachments
+    unsigned fbo;
+    glGenFramebuffers(1, &fbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fboColorTextureAttachment, 0);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, fboDepthStencilRboAttachment);
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+        std::cout << "ERROR - Framebuffer is not complete\n";
+        return 1;
+    }
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    // shader
+    Shader fboShader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/framebuffer_simple.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/framebuffer_simple.frag"};
+    fboShader.use();
+    fboShader.setInt("texture0", 0);
+    // vertices - CCW
+    constexpr float fboVertices[] = {
+            // pos: x, y, texture: u, v
+            -1, -1 , 0, 0,
+            -1, 1 , 0, 1,
+            1, 1 , 1, 1,
+
+            1, 1 , 1, 1,
+            1, -1 , 1, 0,
+            -1, -1 , 0, 0,
+    };
+    // data buffers & shader attributes
+    unsigned fboVAO;
+    glGenVertexArrays(1, &fboVAO);
+    glBindVertexArray(fboVAO);
+    unsigned fboVBO;
+    glGenBuffers(1, & fboVBO);
+    glBindBuffer(GL_ARRAY_BUFFER, fboVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(fboVertices), fboVertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(0 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+    glEnableVertexAttribArray(0);
+    glBindVertexArray(0);
 
     // z-buffer
     glEnable(GL_DEPTH_TEST);
@@ -542,6 +598,11 @@ int main(int argc, char** argv) {
             lastDisableCursor = disableCursor;
         }
 
+        if (lastDrawWireFrame != drawWireFrame) {
+            glPolygonMode(GL_FRONT_AND_BACK, drawWireFrame ? GL_LINE : GL_FILL);
+            lastDrawWireFrame = drawWireFrame;
+        }
+
         // Clear color and depth buffer
         // glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f); // depth testing
@@ -551,38 +612,56 @@ int main(int argc, char** argv) {
         const glm::mat4 view = camera.getViewMatrix();
         const glm::mat4 projection = glm::perspective(glm::radians(camera.getFieldOfView()), SCREEN_WIDTH/SCREEN_HEIGTH, 0.1f, 100.0f);
 
+        /*** Framebuffer - 1 ***/
+        // should uncomment `Depth Testing` section for drawing in framebuffer
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+        glEnable(GL_DEPTH_TEST);
+
         /*** Depth Testing ***/
-//        depthTestingShader.use();
-//        depthTestingShader.setMat4("view", view);
-//        depthTestingShader.setMat4("projection", projection);
-//        // cubes
-//        glBindVertexArray(cubeVAO);
-//        glActiveTexture(GL_TEXTURE0);
-//        glBindTexture(GL_TEXTURE_2D, cubeTexture->id);
-//        depthTestingShader.setMat4("model", glm::translate(glm::mat4{1.0f}, glm::vec3(-1.0f, 0.0f, -1.0f)));
-//        glDrawArrays(GL_TRIANGLES, 0, 36);
-//        depthTestingShader.setMat4("model", glm::translate(glm::mat4{1.0f}, glm::vec3(2.0f, 0.0f, 0.0f)));
-//        glDrawArrays(GL_TRIANGLES, 0, 36);
-//        // floor
-//        glBindVertexArray(planeVAO);
-//        glActiveTexture(GL_TEXTURE0);
-//        glBindTexture(GL_TEXTURE_2D, floorTexture->id);
-//        depthTestingShader.setMat4("model", glm::mat4{1.0f});
-//        glDrawArrays(GL_TRIANGLES, 0, 6);
+        depthTestingShader.use();
+        depthTestingShader.setMat4("view", view);
+        depthTestingShader.setMat4("projection", projection);
+        // cubes
+        glBindVertexArray(cubeVAO);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, cubeTexture->id);
+        depthTestingShader.setMat4("model", glm::translate(glm::mat4{1.0f}, glm::vec3(-1.0f, 0.0f, -1.0f)));
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+        depthTestingShader.setMat4("model", glm::translate(glm::mat4{1.0f}, glm::vec3(2.0f, 0.0f, 0.0f)));
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+        // floor
+        glBindVertexArray(planeVAO);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, floorTexture->id);
+        depthTestingShader.setMat4("model", glm::mat4{1.0f});
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+
+        /*** Framebuffer - 2 ***/
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
+        fboShader.use();
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, fboColorTextureAttachment);
+        glBindVertexArray(fboVAO);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+        glDisable(GL_DEPTH_TEST); // disable depth test so axis will showup
 
         /*** Face Culling ***/
-        // reuse blending shader
-        blendingShader.use();
-        blendingShader.setMat4("view", view);
-        blendingShader.setMat4("projection", projection);
-        // draw cube
-        glBindVertexArray(cubeCCWFaceCullingVAO);
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, cubeTexture->id);
-        blendingShader.setMat4("model", glm::mat4{1.0f});
-        glDrawArrays(GL_TRIANGLES, 0, 36);
+//        // reuse blending shader
+//        blendingShader.use();
+//        blendingShader.setMat4("view", view);
+//        blendingShader.setMat4("projection", projection);
+//        // draw cube
+//        glBindVertexArray(cubeCCWFaceCullingVAO);
+//        glActiveTexture(GL_TEXTURE1);
+//        glBindTexture(GL_TEXTURE_2D, cubeTexture->id);
+//        blendingShader.setMat4("model", glm::mat4{1.0f});
+//        glDrawArrays(GL_TRIANGLES, 0, 36);
 
-//
+
 //        /*** Blending ***/
 //        blendingShader.use();
 //        blendingShader.setMat4("view", view);
@@ -608,10 +687,6 @@ int main(int argc, char** argv) {
 //        glEnable(GL_BLEND);
 //        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 //        glBindTexture(GL_TEXTURE_2D, transparentWindowTexture->id);
-//        std::vector<int> numbers = {5, 3 , 2, 1, 69};
-//        std::sort(numbers.begin(), numbers.end(), [](const auto& l, const auto& r){
-//            return l < r;
-//        });
 //        // sort from farthest to nearest position, so depth test won't interfere with blending
 //        auto sortedPosition = vegetation;
 //        std::sort(sortedPosition.begin(), sortedPosition.end(), [camPos = camera.getPosition()](const auto& left, const auto& right){
@@ -621,7 +696,6 @@ int main(int argc, char** argv) {
 //        });
 //        for (auto idx = 0u; idx < sortedPosition.size(); idx++) {
 //            blendingShader.setMat4("model", glm::translate(glm::mat4(1.0f), sortedPosition[idx]));
-//            std::cout << numbers[idx] << std::endl;
 //            glDrawArrays(GL_TRIANGLES, 0, 6);
 //        }
 
@@ -859,6 +933,10 @@ void keyboardCallback(GLFWwindow* window, int key, int scancode, int action, int
             case GLFW_KEY_J:
                 keyStr = "J";
                 disableCursor = !disableCursor;
+                break;
+            case GLFW_KEY_K:
+                keyStr = "K";
+                drawWireFrame = !drawWireFrame;
                 break;
         }
 
