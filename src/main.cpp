@@ -461,6 +461,68 @@ int main(int argc, char** argv) {
     blendingShader.use();
     blendingShader.setInt("texture0", 1);
 
+    /*** Face Culling ***/
+    // CCW - to create this, one should imagine being in front of the face and labeling the vertices in CCW
+    constexpr float cubeVerticesCCW[] = {
+            // Back face
+            -0.5f, -0.5f, -0.5f,  0.0f, 0.0f, // Bottom-left
+            0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-right
+            0.5f, -0.5f, -0.5f,  1.0f, 0.0f, // bottom-right
+            0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-right
+            -0.5f, -0.5f, -0.5f,  0.0f, 0.0f, // bottom-left
+            -0.5f,  0.5f, -0.5f,  0.0f, 1.0f, // top-left
+            // Front face
+            -0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-left
+            0.5f, -0.5f,  0.5f,  1.0f, 0.0f, // bottom-right
+            0.5f,  0.5f,  0.5f,  1.0f, 1.0f, // top-right
+            0.5f,  0.5f,  0.5f,  1.0f, 1.0f, // top-right
+            -0.5f,  0.5f,  0.5f,  0.0f, 1.0f, // top-left
+            -0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-left
+            // Left face
+            -0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // top-right
+            -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-left
+            -0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // bottom-left
+            -0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // bottom-left
+            -0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-right
+            -0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // top-right
+            // Right face
+            0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // top-left
+            0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // bottom-right
+            0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-right
+            0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // bottom-right
+            0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // top-left
+            0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-left
+            // Bottom face
+            -0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // top-right
+            0.5f, -0.5f, -0.5f,  1.0f, 1.0f, // top-left
+            0.5f, -0.5f,  0.5f,  1.0f, 0.0f, // bottom-left
+            0.5f, -0.5f,  0.5f,  1.0f, 0.0f, // bottom-left
+            -0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-right
+            -0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // top-right
+            // Top face
+            -0.5f,  0.5f, -0.5f,  0.0f, 1.0f, // top-left
+            0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // bottom-right
+            0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-right
+            0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // bottom-right
+            -0.5f,  0.5f, -0.5f,  0.0f, 1.0f, // top-left
+            -0.5f,  0.5f,  0.5f,  0.0f, 0.0f  // bottom-left
+    };
+    unsigned cubeCCWFaceCullingVAO;
+    glGenVertexArrays(1, &cubeCCWFaceCullingVAO);
+    glBindVertexArray(cubeCCWFaceCullingVAO);
+    unsigned cubeCCWFaceCullingVBO;
+    glGenBuffers(1, &cubeCCWFaceCullingVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVerticesCCW), cubeVerticesCCW, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(0 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(0);
+    // intentionally cull front-face
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_FRONT);
+    glFrontFace(GL_CCW);
+
     // wireframe
     // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
@@ -508,47 +570,60 @@ int main(int argc, char** argv) {
 //        depthTestingShader.setMat4("model", glm::mat4{1.0f});
 //        glDrawArrays(GL_TRIANGLES, 0, 6);
 
-        /*** Blending ***/
+        /*** Face Culling ***/
+        // reuse blending shader
         blendingShader.use();
         blendingShader.setMat4("view", view);
         blendingShader.setMat4("projection", projection);
-        // draw floor
-        glBindVertexArray(planeVAO);
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, floorTexture->id);
-        blendingShader.setMat4("model", glm::mat4{1.0f});
-        glDrawArrays(GL_TRIANGLES, 0, 6);
-        // draw cubes
-        glBindVertexArray(cubeVAO);
+        // draw cube
+        glBindVertexArray(cubeCCWFaceCullingVAO);
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, cubeTexture->id);
-        blendingShader.setMat4("model", glm::translate(glm::mat4{1.0f}, glm::vec3(-1.0f, 0.0f, -1.0f)));
+        blendingShader.setMat4("model", glm::mat4{1.0f});
         glDrawArrays(GL_TRIANGLES, 0, 36);
-        blendingShader.setMat4("model", glm::translate(glm::mat4{1.0f}, glm::vec3(2.0f, 0.0f, 0.0f)));
-        glDrawArrays(GL_TRIANGLES, 0, 36);
-        // draw grass or window
-        glBindVertexArray(grassVAO);
-        glActiveTexture(GL_TEXTURE1);
-//        glBindTexture(GL_TEXTURE_2D, grassTexture->id);
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        glBindTexture(GL_TEXTURE_2D, transparentWindowTexture->id);
-        std::vector<int> numbers = {5, 3 , 2, 1, 69};
-        std::sort(numbers.begin(), numbers.end(), [](const auto& l, const auto& r){
-            return l < r;
-        });
-        // sort from farthest to nearest position, so depth test won't interfere with blending
-        auto sortedPosition = vegetation;
-        std::sort(sortedPosition.begin(), sortedPosition.end(), [camPos = camera.getPosition()](const auto& left, const auto& right){
-            const auto leftDist = glm::distance(camPos, left);
-            const auto rightDist = glm::distance(camPos, right);
-            return leftDist > rightDist;
-        });
-        for (auto idx = 0u; idx < sortedPosition.size(); idx++) {
-            blendingShader.setMat4("model", glm::translate(glm::mat4(1.0f), sortedPosition[idx]));
-            std::cout << numbers[idx] << std::endl;
-            glDrawArrays(GL_TRIANGLES, 0, 6);
-        }
+
+//
+//        /*** Blending ***/
+//        blendingShader.use();
+//        blendingShader.setMat4("view", view);
+//        blendingShader.setMat4("projection", projection);
+//        // draw floor
+//        glBindVertexArray(planeVAO);
+//        glActiveTexture(GL_TEXTURE1);
+//        glBindTexture(GL_TEXTURE_2D, floorTexture->id);
+//        blendingShader.setMat4("model", glm::mat4{1.0f});
+//        glDrawArrays(GL_TRIANGLES, 0, 6);
+//        // draw cubes
+//        glBindVertexArray(cubeVAO);
+//        glActiveTexture(GL_TEXTURE1);
+//        glBindTexture(GL_TEXTURE_2D, cubeTexture->id);
+//        blendingShader.setMat4("model", glm::translate(glm::mat4{1.0f}, glm::vec3(-1.0f, 0.0f, -1.0f)));
+//        glDrawArrays(GL_TRIANGLES, 0, 36);
+//        blendingShader.setMat4("model", glm::translate(glm::mat4{1.0f}, glm::vec3(2.0f, 0.0f, 0.0f)));
+//        glDrawArrays(GL_TRIANGLES, 0, 36);
+//        // draw grass or window
+//        glBindVertexArray(grassVAO);
+//        glActiveTexture(GL_TEXTURE1);
+////        glBindTexture(GL_TEXTURE_2D, grassTexture->id);
+//        glEnable(GL_BLEND);
+//        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+//        glBindTexture(GL_TEXTURE_2D, transparentWindowTexture->id);
+//        std::vector<int> numbers = {5, 3 , 2, 1, 69};
+//        std::sort(numbers.begin(), numbers.end(), [](const auto& l, const auto& r){
+//            return l < r;
+//        });
+//        // sort from farthest to nearest position, so depth test won't interfere with blending
+//        auto sortedPosition = vegetation;
+//        std::sort(sortedPosition.begin(), sortedPosition.end(), [camPos = camera.getPosition()](const auto& left, const auto& right){
+//            const auto leftDist = glm::distance(camPos, left);
+//            const auto rightDist = glm::distance(camPos, right);
+//            return leftDist > rightDist;
+//        });
+//        for (auto idx = 0u; idx < sortedPosition.size(); idx++) {
+//            blendingShader.setMat4("model", glm::translate(glm::mat4(1.0f), sortedPosition[idx]));
+//            std::cout << numbers[idx] << std::endl;
+//            glDrawArrays(GL_TRIANGLES, 0, 6);
+//        }
 
         /*** Stencil Testing ***/
 //        stencilTestingShader.use();
