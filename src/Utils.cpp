@@ -2,6 +2,7 @@
 
 #include <glad/glad.h>
 #include <iostream>
+#include <algorithm>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb/stb_image.hpp>
@@ -23,6 +24,9 @@ std::optional<TextureContext> tryLoadTexture(const std::string& texturePath, boo
         else if (nrComponents == 4)
             format = GL_RGBA;
 
+        const auto textureName = texturePath.substr(texturePath.find_last_of('/') + 1, texturePath.size());
+
+        std::cout << "tryLoadTexture - '" << textureName << "' width: " << width << " height: " << height << " components: " << nrComponents << "\n";
         glBindTexture(GL_TEXTURE_2D, id);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
