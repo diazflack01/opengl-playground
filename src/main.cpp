@@ -627,7 +627,7 @@ int main(int argc, char** argv) {
         // cubes
         glBindVertexArray(cubeVAO);
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, cubeTexture->id);
+        glBindTexture(GL_TEXTURE_2D, woodContainerDiffuseMap->id);
         depthTestingShader.setMat4("model", glm::translate(glm::mat4{1.0f}, glm::vec3(-1.0f, 0.0f, -1.0f)));
         glDrawArrays(GL_TRIANGLES, 0, 36);
         depthTestingShader.setMat4("model", glm::translate(glm::mat4{1.0f}, glm::vec3(2.0f, 0.0f, 0.0f)));
@@ -644,6 +644,13 @@ int main(int argc, char** argv) {
         glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
         fboShader.use();
+//        fboShader.setBool("inversion", true);
+//        fboShader.setBool("grayScaleAverage", true);
+//        fboShader.setBool("grayScaleWeighted", true);
+//        fboShader.setBool("kernelEffectSharpen", true);
+        fboShader.setBool("kernelEffectBlurr", true);
+        fboShader.setBool("blurrStrength", 64);
+//        fboShader.setBool("kernelEffectEdgeDetection", true);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, fboColorTextureAttachment);
         glBindVertexArray(fboVAO);
