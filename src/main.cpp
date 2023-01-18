@@ -608,6 +608,61 @@ int main(int argc, char** argv) {
     glEnableVertexAttribArray(0);
     glBindVertexArray(0);
 
+    /*** Cubemaps ***/
+    const float skyboxVertices[] = {
+            // positions
+            -1.0f,  1.0f, -1.0f,
+            -1.0f, -1.0f, -1.0f,
+            1.0f, -1.0f, -1.0f,
+            1.0f, -1.0f, -1.0f,
+            1.0f,  1.0f, -1.0f,
+            -1.0f,  1.0f, -1.0f,
+
+            -1.0f, -1.0f,  1.0f,
+            -1.0f, -1.0f, -1.0f,
+            -1.0f,  1.0f, -1.0f,
+            -1.0f,  1.0f, -1.0f,
+            -1.0f,  1.0f,  1.0f,
+            -1.0f, -1.0f,  1.0f,
+
+            1.0f, -1.0f, -1.0f,
+            1.0f, -1.0f,  1.0f,
+            1.0f,  1.0f,  1.0f,
+            1.0f,  1.0f,  1.0f,
+            1.0f,  1.0f, -1.0f,
+            1.0f, -1.0f, -1.0f,
+
+            -1.0f, -1.0f,  1.0f,
+            -1.0f,  1.0f,  1.0f,
+            1.0f,  1.0f,  1.0f,
+            1.0f,  1.0f,  1.0f,
+            1.0f, -1.0f,  1.0f,
+            -1.0f, -1.0f,  1.0f,
+
+            -1.0f,  1.0f, -1.0f,
+            1.0f,  1.0f, -1.0f,
+            1.0f,  1.0f,  1.0f,
+            1.0f,  1.0f,  1.0f,
+            -1.0f,  1.0f,  1.0f,
+            -1.0f,  1.0f, -1.0f,
+
+            -1.0f, -1.0f, -1.0f,
+            -1.0f, -1.0f,  1.0f,
+            1.0f, -1.0f, -1.0f,
+            1.0f, -1.0f, -1.0f,
+            -1.0f, -1.0f,  1.0f,
+            1.0f, -1.0f,  1.0f
+    };
+    const std::vector<std::string> cubemapFaces{
+        "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/texture/skybox/right.png",
+        "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/texture/skybox/left.png",
+        "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/texture/skybox/top.png",
+        "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/texture/skybox/bottom.png",
+        "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/texture/skybox/front.png",
+        "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/texture/skybox/back.png",
+    };
+    const auto cubemapTexture = loadCubemapTexture(cubemapFaces);
+
     // z-buffer
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
