@@ -996,6 +996,26 @@ void keyboardCallback(GLFWwindow* window, int key, int scancode, int action, int
                 keyStr = "K";
                 drawWireFrame = !drawWireFrame;
                 break;
+            case GLFW_KEY_X:
+                keyStr = "X";
+                std::cout << "yaw camera.rotate(5, 0) \n";
+                camera.rotate(5, 0);
+                break;
+            case GLFW_KEY_Z:
+                keyStr = "Z";
+                std::cout << "yaw camera.rotate(-5, 0) \n";
+                camera.rotate(-5, 0);
+                break;
+            case GLFW_KEY_Y:
+                keyStr = "Y";
+                std::cout << "pitch camera.rotate(0, 5) \n";
+                camera.rotate(0, 5);
+                break;
+            case GLFW_KEY_T:
+                keyStr = "T";
+                std::cout << "pitch camera.rotate(0, -5) \n";
+                camera.rotate(0, -5);
+                break;
         }
 
         if (keyStr.has_value()) {
