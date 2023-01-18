@@ -33,6 +33,7 @@ public:
         BoundedData<float> yaw;
         Sensitivity sensitivity;
         glm::vec2 mouseXYPos;
+        bool clampPitch;
     };
 
     explicit Camera(ConfigState configState);
@@ -40,6 +41,10 @@ public:
     void processMovement(Movement movement, float deltaTime);
 
     void processMouseMovement(float xPos, float yPos);
+
+    void rotate(float xRot, float yRot);
+
+    void setClampPitchEnabled(bool enable);
 
     void processMouseScroll(float yOffset);
 

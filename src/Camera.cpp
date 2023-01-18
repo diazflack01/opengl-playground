@@ -63,7 +63,24 @@ void Camera::processMouseMovement(float xPos, float yPos) {
     mConfigState.pitch.val += XYOffset.y;
 
     mConfigState.yaw.val = clamp(mConfigState.yaw);
-    mConfigState.pitch.val = clamp(mConfigState.pitch);
+    mConfigState.pitch.val = mConfigState.clampPitch ? clamp(mConfigState.pitch) : mConfigState.pitch.val;
+
+    glm::vec3 direction;
+    direction.x = cos(glm::radians(mConfigState.yaw.val)) * cos(glm::radians(mConfigState.pitch.val));
+    direction.y = sin(glm::radians(mConfigState.pitch.val));
+    direction.z = sin(glm::radians(mConfigState.yaw.val)) * cos(glm::radians(mConfigState.pitch.val));
+    mConfigState.front = glm::normalize(direction);
+
+    recalculateViewMatrix();
+}
+
+
+void Camera::rotate(float xRot, float yRot) {
+    mConfigState.yaw.val += xRot;
+    mConfigState.pitch.val += yRot;
+
+    mConfigState.yaw.val = clamp(mConfigState.yaw);
+    mConfigState.pitch.val = mConfigState.clampPitch ? clamp(mConfigState.pitch) : mConfigState.pitch.val;
 
     glm::vec3 direction;
     direction.x = cos(glm::radians(mConfigState.yaw.val)) * cos(glm::radians(mConfigState.pitch.val));
@@ -102,4 +119,8 @@ glm::vec3 Camera::getPosition() const {
 
 glm::vec3 Camera::getFront() const {
     return mConfigState.front;
+}
+
+void Camera::setClampPitchEnabled(bool enable) {
+    mConfigState.clampPitch = enable;
 }

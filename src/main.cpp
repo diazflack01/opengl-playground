@@ -32,8 +32,9 @@ Camera::ConfigState cameraConfig{
         Camera::BoundedData<float>{45.0f, 1.0f, 45.0f},
         Camera::BoundedData<float>{0.0f, -89.f, 89.f},
         Camera::BoundedData<float>{-90.0f, std::nullopt, std::nullopt}, // rotate at x-axis so it looks forward
-        Camera::Sensitivity{2.5f, 0.1f},
-        glm::vec2{SCREEN_WIDTH/2.0f, SCREEN_HEIGTH/2.0f}
+        Camera::Sensitivity{10.0f, 0.1f},
+        glm::vec2{SCREEN_WIDTH/2.0f, SCREEN_HEIGTH/2.0f},
+        true
 };
 
 Camera camera{cameraConfig};
@@ -581,6 +582,31 @@ int main(int argc, char** argv) {
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
     glEnableVertexAttribArray(0);
     glBindVertexArray(0);
+    // rearview mirror
+    // vertices - CCW
+    constexpr float fboVerticesRearView[] = {
+            // pos: x, y, texture: u, v
+            -0.3, 0.5, 0, 0,
+            -0.3, 1 , 0, 1,
+            0.3, 1 , 1, 1,
+
+            0.3, 1 , 1, 1,
+            0.3, 0.5 , 1, 0,
+            -0.3, 0.5, 0, 0,
+    };
+    unsigned fboRearViewVAO;
+    glGenVertexArrays(1, &fboRearViewVAO);
+    glBindVertexArray(fboRearViewVAO);
+    unsigned fboRearViewVBO;
+    glGenBuffers(1, & fboRearViewVBO);
+    glBindBuffer(GL_ARRAY_BUFFER, fboRearViewVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(fboVerticesRearView), fboVerticesRearView, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(0 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+    glEnableVertexAttribArray(0);
+    glBindVertexArray(0);
 
     // z-buffer
     glEnable(GL_DEPTH_TEST);
@@ -620,42 +646,66 @@ int main(int argc, char** argv) {
         glEnable(GL_DEPTH_TEST);
 
         /*** Depth Testing ***/
-        depthTestingShader.use();
+        auto runDepthTestingCode = [&](const glm::mat4& viewMatrix) {
+            depthTestingShader.use();
 //        depthTestingShader.setBool("visualizeDepthLinear", true);
-        depthTestingShader.setMat4("view", view);
-        depthTestingShader.setMat4("projection", projection);
-        // cubes
-        glBindVertexArray(cubeVAO);
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, woodContainerDiffuseMap->id);
-        depthTestingShader.setMat4("model", glm::translate(glm::mat4{1.0f}, glm::vec3(-1.0f, 0.0f, -1.0f)));
-        glDrawArrays(GL_TRIANGLES, 0, 36);
-        depthTestingShader.setMat4("model", glm::translate(glm::mat4{1.0f}, glm::vec3(2.0f, 0.0f, 0.0f)));
-        glDrawArrays(GL_TRIANGLES, 0, 36);
-        // floor
-        glBindVertexArray(planeVAO);
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, floorTexture->id);
-        depthTestingShader.setMat4("model", glm::mat4{1.0f});
-        glDrawArrays(GL_TRIANGLES, 0, 6);
+            depthTestingShader.setMat4("view", viewMatrix);
+            depthTestingShader.setMat4("projection", projection);
+            // cubes
+            glBindVertexArray(cubeVAO);
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, woodContainerDiffuseMap->id);
+            depthTestingShader.setMat4("model", glm::translate(glm::mat4{1.0f}, glm::vec3(-1.0f, 0.0f, -1.0f)));
+            glDrawArrays(GL_TRIANGLES, 0, 36);
+            depthTestingShader.setMat4("model", glm::translate(glm::mat4{1.0f}, glm::vec3(2.0f, 0.0f, 0.0f)));
+            glDrawArrays(GL_TRIANGLES, 0, 36);
+            // floor
+            glBindVertexArray(planeVAO);
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, floorTexture->id);
+            depthTestingShader.setMat4("model", glm::mat4{1.0f});
+            glDrawArrays(GL_TRIANGLES, 0, 6);
+        };
+        runDepthTestingCode(camera.getViewMatrix());
 
         /*** Framebuffer - 2 ***/
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
-        fboShader.use();
+        auto drawOnMainFrameBufferUsingFBOColorAttachment = [&](unsigned vao, bool clearColorBuffer = true, bool disableDepthTestBeforeDrawing = false){
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+            glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+            if (clearColorBuffer) {
+                glClear(GL_COLOR_BUFFER_BIT);
+            }
+            fboShader.use();
 //        fboShader.setBool("inversion", true);
 //        fboShader.setBool("grayScaleAverage", true);
 //        fboShader.setBool("grayScaleWeighted", true);
 //        fboShader.setBool("kernelEffectSharpen", true);
-        fboShader.setBool("kernelEffectBlurr", true);
-        fboShader.setBool("blurrStrength", 64);
+//        fboShader.setBool("kernelEffectBlurr", true);
+//        fboShader.setBool("blurrStrength", 64);
 //        fboShader.setBool("kernelEffectEdgeDetection", true);
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, fboColorTextureAttachment);
-        glBindVertexArray(fboVAO);
-        glDrawArrays(GL_TRIANGLES, 0, 6);
-        glDisable(GL_DEPTH_TEST); // disable depth test so axis will showup
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, fboColorTextureAttachment);
+            glBindVertexArray(vao);
+            if (disableDepthTestBeforeDrawing) {
+                glDisable(GL_DEPTH_TEST);
+            }
+            glDrawArrays(GL_TRIANGLES, 0, 6);
+            glDisable(GL_DEPTH_TEST); // disable depth test so axis will showup
+        };
+        drawOnMainFrameBufferUsingFBOColorAttachment(fboVAO);
+
+        // rearview mirror
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+        glEnable(GL_DEPTH_TEST);
+        // TODO: Understand why this rotate gives wrong result when camera is position on top and looking down
+        camera.setClampPitchEnabled(false);
+        camera.rotate(-180, 0);
+        runDepthTestingCode(camera.getViewMatrix());
+        camera.setClampPitchEnabled(true);
+        camera.rotate(180, 0);
+        drawOnMainFrameBufferUsingFBOColorAttachment(fboRearViewVAO, false, true);
 
         /*** Face Culling ***/
 //        // reuse blending shader
