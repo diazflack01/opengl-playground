@@ -741,7 +741,12 @@ int main(int argc, char** argv) {
 
         /*** Cubemaps ***/
         glEnable(GL_DEPTH_TEST);
-        glDepthMask(GL_FALSE);
+        drawCubeWithTexCoords(glm::mat4{1.0f}, view, projection, textureWoodContainer->id);
+        drawCubeWithTexCoords(glm::translate(glm::mat4{1.0f}, glm::vec3{1.0f, 1.0, 1.0}), view, projection, textureAwesomeFace->id);
+        // vertex shader modified to always output 1 for z-buffer / depth, by doing so
+        // GL_LEQUAL will only pass if there is no depth value stored in depth buffer
+        // which means no fragment was drawn at the given screen space coordinate
+        glDepthFunc(GL_LEQUAL);
         skyboxShader.use();
         skyboxShader.setMat4("view", glm::mat4(glm::mat3(view))); // remove the translation part of view matrix
         skyboxShader.setMat4("projection", projection);
@@ -749,10 +754,7 @@ int main(int argc, char** argv) {
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxCubemapTexture);
         glDrawArrays(GL_TRIANGLES, 0, sizeof(skyboxVertices)/sizeof(decltype(skyboxVertices[0])));
-        glDepthMask(GL_TRUE);
-        // draw cube
-        drawCubeWithTexCoords(glm::mat4{1.0f}, view, projection, textureWoodContainer->id);
-        drawCubeWithTexCoords(glm::translate(glm::mat4{1.0f}, glm::vec3{1.0f, 1.0, 1.0}), view, projection, textureAwesomeFace->id);
+        glDepthFunc(GL_LESS);
 
 //        /*** Framebuffer - 1 ***/
 //        // should uncomment `Depth Testing` section for drawing in framebuffer
