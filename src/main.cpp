@@ -253,6 +253,20 @@ int main(int argc, char** argv) {
             -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
             -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
     };
+    unsigned cubeWithNormalsVAO;
+    glGenVertexArrays(1, &cubeWithNormalsVAO);
+    glBindVertexArray(cubeWithNormalsVAO);
+    unsigned cubeWithNormalsVBO;
+    glGenBuffers(1, &cubeWithNormalsVBO);
+    glBindBuffer(GL_ARRAY_BUFFER, cubeWithNormalsVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVerticesWithNormals), cubeVerticesWithNormals, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(0 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(0);
+
+    Shader skyboxReflectionShader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/skybox_reflection.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/skybox_reflection.frag"};
 
     const float cubeVerticesWithNormalsAndTextureCoords[] = {
             // positions          // normals           // texture coords
@@ -743,6 +757,16 @@ int main(int argc, char** argv) {
         glEnable(GL_DEPTH_TEST);
         drawCubeWithTexCoords(glm::mat4{1.0f}, view, projection, textureWoodContainer->id);
         drawCubeWithTexCoords(glm::translate(glm::mat4{1.0f}, glm::vec3{1.0f, 1.0, 1.0}), view, projection, textureAwesomeFace->id);
+        // cube with reflection
+        skyboxReflectionShader.use();
+        skyboxReflectionShader.setInt("skybox", 0);
+        skyboxReflectionShader.setMat4("model", glm::scale(glm::translate(glm::mat4{1.0f}, glm::vec3{-3.0f, 0.0f, 0.0}), glm::vec3{2.0, 2.0, 2.0}));
+        skyboxReflectionShader.setMat4("view", view);
+        skyboxReflectionShader.setMat4("projection", projection);
+        glBindVertexArray(cubeWithNormalsVAO);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxCubemapTexture);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
         // vertex shader modified to always output 1 for z-buffer / depth, by doing so
         // GL_LEQUAL will only pass if there is no depth value stored in depth buffer
         // which means no fragment was drawn at the given screen space coordinate
