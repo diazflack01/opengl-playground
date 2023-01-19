@@ -104,7 +104,6 @@ int main(int argc, char** argv) {
 
     // Shader shader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/basic.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/basic.frag"};
     // Shader shader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/basic_texture.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/basic_texture.frag"};
-    // Shader texturedShader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/basic_cube.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/basic_cube.frag"};
     // Shader lightShader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/light.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/light.frag"};
     Shader lightShader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/light_phong.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/light_phong.frag"};
     Shader lightSrcShader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/light.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/light_src.frag"};
@@ -183,6 +182,22 @@ int main(int argc, char** argv) {
             -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
             -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
     };
+
+    unsigned cubeWithTexCoordsVAO;
+    glGenVertexArrays(1, &cubeWithTexCoordsVAO);
+    glBindVertexArray(cubeWithTexCoordsVAO);
+    unsigned cubeWithTexCoordsVBO;
+    glGenBuffers(1, &cubeWithTexCoordsVBO);
+    glBindBuffer(GL_ARRAY_BUFFER, cubeWithTexCoordsVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVerticesWithTextureCoords), cubeVerticesWithTextureCoords, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(0 * sizeof(float)));
+    glEnableVertexAttribArray(2);
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(0);
+    glBindVertexArray(0);
+
+    Shader cubeWithTexCoordsShader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/basic_cube.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/basic_cube.frag"};
 
     const float planeVertices[] = {
             // positions          // texture Coords (note we set these higher than 1 (together with GL_REPEAT as texture wrapping mode). this will cause the floor texture to repeat)
@@ -653,15 +668,29 @@ int main(int argc, char** argv) {
             -1.0f, -1.0f,  1.0f,
             1.0f, -1.0f,  1.0f
     };
+    unsigned skyboxVAO;
+    glGenVertexArrays(1, & skyboxVAO);
+    glBindVertexArray(skyboxVAO);
+    unsigned skyboxVBO;
+    glGenBuffers(1, &skyboxVBO);
+    glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), skyboxVertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)(0 * sizeof(float)));
+    glEnableVertexAttribArray(0);
+
     const std::vector<std::string> cubemapFaces{
-        "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/texture/skybox/right.png",
-        "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/texture/skybox/left.png",
-        "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/texture/skybox/top.png",
-        "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/texture/skybox/bottom.png",
-        "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/texture/skybox/front.png",
-        "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/texture/skybox/back.png",
+        "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/texture/skybox/right.jpg",
+        "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/texture/skybox/left.jpg",
+        "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/texture/skybox/top.jpg",
+        "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/texture/skybox/bottom.jpg",
+        "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/texture/skybox/front.jpg",
+        "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/texture/skybox/back.jpg",
     };
-    const auto cubemapTexture = loadCubemapTexture(cubemapFaces);
+    const auto skyboxCubemapTexture = loadCubemapTexture(cubemapFaces);
+    Shader skyboxShader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/skybox.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/skybox.frag"};
+    skyboxShader.use();
+    skyboxShader.setInt("skybox", 0);
 
     // z-buffer
     glEnable(GL_DEPTH_TEST);
@@ -689,78 +718,110 @@ int main(int argc, char** argv) {
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f); // depth testing
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
+        // lambda helper for drawing cube
+        auto drawCubeWithTexCoords = [&](const glm::mat4 model, const glm::mat4 view, const glm::mat4 projection, unsigned texture){
+            cubeWithTexCoordsShader.use();
+            cubeWithTexCoordsShader.setMat4("model", model);
+            cubeWithTexCoordsShader.setMat4("view", view);
+            cubeWithTexCoordsShader.setMat4("projection", projection);
+            glBindVertexArray(cubeWithTexCoordsVAO);
+            cubeWithTexCoordsShader.setInt("texture0", 0);
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, texture);
+
+            cubeWithTexCoordsShader.setInt("texture1", 1);
+            glActiveTexture(GL_TEXTURE1);
+            glBindTexture(GL_TEXTURE_2D, texture);
+            glDrawArrays(GL_TRIANGLES, 0, 36);
+        };
+
         // Current cycle camera view and projection
         const glm::mat4 view = camera.getViewMatrix();
         const glm::mat4 projection = glm::perspective(glm::radians(camera.getFieldOfView()), SCREEN_WIDTH/SCREEN_HEIGTH, 0.1f, 100.0f);
 
-        /*** Framebuffer - 1 ***/
-        // should uncomment `Depth Testing` section for drawing in framebuffer
-        glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+        /*** Cubemaps ***/
         glEnable(GL_DEPTH_TEST);
+        glDepthMask(GL_FALSE);
+        skyboxShader.use();
+        skyboxShader.setMat4("view", glm::mat4(glm::mat3(view))); // remove the translation part of view matrix
+        skyboxShader.setMat4("projection", projection);
+        glBindVertexArray(skyboxVAO);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxCubemapTexture);
+        glDrawArrays(GL_TRIANGLES, 0, sizeof(skyboxVertices)/sizeof(decltype(skyboxVertices[0])));
+        glDepthMask(GL_TRUE);
+        // draw cube
+        drawCubeWithTexCoords(glm::mat4{1.0f}, view, projection, textureWoodContainer->id);
+        drawCubeWithTexCoords(glm::translate(glm::mat4{1.0f}, glm::vec3{1.0f, 1.0, 1.0}), view, projection, textureAwesomeFace->id);
 
-        /*** Depth Testing ***/
-        auto runDepthTestingCode = [&](const glm::mat4& viewMatrix) {
-            depthTestingShader.use();
-//        depthTestingShader.setBool("visualizeDepthLinear", true);
-            depthTestingShader.setMat4("view", viewMatrix);
-            depthTestingShader.setMat4("projection", projection);
-            // cubes
-            glBindVertexArray(cubeVAO);
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, woodContainerDiffuseMap->id);
-            depthTestingShader.setMat4("model", glm::translate(glm::mat4{1.0f}, glm::vec3(-1.0f, 0.0f, -1.0f)));
-            glDrawArrays(GL_TRIANGLES, 0, 36);
-            depthTestingShader.setMat4("model", glm::translate(glm::mat4{1.0f}, glm::vec3(2.0f, 0.0f, 0.0f)));
-            glDrawArrays(GL_TRIANGLES, 0, 36);
-            // floor
-            glBindVertexArray(planeVAO);
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, floorTexture->id);
-            depthTestingShader.setMat4("model", glm::mat4{1.0f});
-            glDrawArrays(GL_TRIANGLES, 0, 6);
-        };
-        runDepthTestingCode(camera.getViewMatrix());
-
-        /*** Framebuffer - 2 ***/
-        auto drawOnMainFrameBufferUsingFBOColorAttachment = [&](unsigned vao, bool clearColorBuffer = true, bool disableDepthTestBeforeDrawing = false){
-            glBindFramebuffer(GL_FRAMEBUFFER, 0);
-            glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-            if (clearColorBuffer) {
-                glClear(GL_COLOR_BUFFER_BIT);
-            }
-            fboShader.use();
-//        fboShader.setBool("inversion", true);
-//        fboShader.setBool("grayScaleAverage", true);
-//        fboShader.setBool("grayScaleWeighted", true);
-//        fboShader.setBool("kernelEffectSharpen", true);
-//        fboShader.setBool("kernelEffectBlurr", true);
-//        fboShader.setBool("blurrStrength", 64);
-//        fboShader.setBool("kernelEffectEdgeDetection", true);
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, fboColorTextureAttachment);
-            glBindVertexArray(vao);
-            if (disableDepthTestBeforeDrawing) {
-                glDisable(GL_DEPTH_TEST);
-            }
-            glDrawArrays(GL_TRIANGLES, 0, 6);
-            glDisable(GL_DEPTH_TEST); // disable depth test so axis will showup
-        };
-        drawOnMainFrameBufferUsingFBOColorAttachment(fboVAO);
-
-        // rearview mirror
-        glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-        glEnable(GL_DEPTH_TEST);
-        // TODO: Understand why this rotate gives wrong result when camera is position on top and looking down
-        camera.setClampPitchEnabled(false);
-        camera.rotate(-180, 0);
-        runDepthTestingCode(camera.getViewMatrix());
-        camera.setClampPitchEnabled(true);
-        camera.rotate(180, 0);
-        drawOnMainFrameBufferUsingFBOColorAttachment(fboRearViewVAO, false, true);
+//        /*** Framebuffer - 1 ***/
+//        // should uncomment `Depth Testing` section for drawing in framebuffer
+//        glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+//        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+//        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+//        glEnable(GL_DEPTH_TEST);
+//
+//        /*** Depth Testing ***/
+//        auto runDepthTestingCode = [&](const glm::mat4& viewMatrix) {
+//            depthTestingShader.use();
+////        depthTestingShader.setBool("visualizeDepthLinear", true);
+//            depthTestingShader.setMat4("view", viewMatrix);
+//            depthTestingShader.setMat4("projection", projection);
+//            // cubes
+//            glBindVertexArray(cubeVAO);
+//            glActiveTexture(GL_TEXTURE0);
+//            glBindTexture(GL_TEXTURE_2D, woodContainerDiffuseMap->id);
+//            depthTestingShader.setMat4("model", glm::translate(glm::mat4{1.0f}, glm::vec3(-1.0f, 0.0f, -1.0f)));
+//            glDrawArrays(GL_TRIANGLES, 0, 36);
+//            depthTestingShader.setMat4("model", glm::translate(glm::mat4{1.0f}, glm::vec3(2.0f, 0.0f, 0.0f)));
+//            glDrawArrays(GL_TRIANGLES, 0, 36);
+//            // floor
+//            glBindVertexArray(planeVAO);
+//            glActiveTexture(GL_TEXTURE0);
+//            glBindTexture(GL_TEXTURE_2D, floorTexture->id);
+//            depthTestingShader.setMat4("model", glm::mat4{1.0f});
+//            glDrawArrays(GL_TRIANGLES, 0, 6);
+//        };
+//        runDepthTestingCode(camera.getViewMatrix());
+//
+//        /*** Framebuffer - 2 ***/
+//        auto drawOnMainFrameBufferUsingFBOColorAttachment = [&](unsigned vao, bool clearColorBuffer = true, bool disableDepthTestBeforeDrawing = false){
+//            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+//            glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+//            if (clearColorBuffer) {
+//                glClear(GL_COLOR_BUFFER_BIT);
+//            }
+//            fboShader.use();
+////        fboShader.setBool("inversion", true);
+////        fboShader.setBool("grayScaleAverage", true);
+////        fboShader.setBool("grayScaleWeighted", true);
+////        fboShader.setBool("kernelEffectSharpen", true);
+////        fboShader.setBool("kernelEffectBlurr", true);
+////        fboShader.setBool("blurrStrength", 64);
+////        fboShader.setBool("kernelEffectEdgeDetection", true);
+//            glActiveTexture(GL_TEXTURE0);
+//            glBindTexture(GL_TEXTURE_2D, fboColorTextureAttachment);
+//            glBindVertexArray(vao);
+//            if (disableDepthTestBeforeDrawing) {
+//                glDisable(GL_DEPTH_TEST);
+//            }
+//            glDrawArrays(GL_TRIANGLES, 0, 6);
+//            glDisable(GL_DEPTH_TEST); // disable depth test so axis will showup
+//        };
+//        drawOnMainFrameBufferUsingFBOColorAttachment(fboVAO);
+//
+//        // rearview mirror
+//        glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+//        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+//        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+//        glEnable(GL_DEPTH_TEST);
+//        // TODO: Understand why this rotate gives wrong result when camera is position on top and looking down
+//        camera.setClampPitchEnabled(false);
+//        camera.rotate(-180, 0);
+//        runDepthTestingCode(camera.getViewMatrix());
+//        camera.setClampPitchEnabled(true);
+//        camera.rotate(180, 0);
+//        drawOnMainFrameBufferUsingFBOColorAttachment(fboRearViewVAO, false, true);
 
         /*** Face Culling ***/
 //        // reuse blending shader
@@ -953,12 +1014,12 @@ int main(int argc, char** argv) {
 //        }
 
         /*** Multiple Cubes ***/
-        // texturedShader.use();
-        // texturedShader.setMat4("view", view);
-        // texturedShader.setMat4("projection", projection);
+        // cubeWithTexCoordsShader.use();
+        // cubeWithTexCoordsShader.setMat4("view", view);
+        // cubeWithTexCoordsShader.setMat4("projection", projection);
         // // purposely flip the value of this to test GL_TEXTUREN value mapping
-        // texturedShader.setInt("texture0", 1); // 1 - maps to GL_TEXTURE1
-        // texturedShader.setInt("texture1", 0); // 0 - maps to GL_TEXTURE0
+        // cubeWithTexCoordsShader.setInt("texture0", 1); // 1 - maps to GL_TEXTURE1
+        // cubeWithTexCoordsShader.setInt("texture1", 0); // 0 - maps to GL_TEXTURE0
         // glActiveTexture(GL_TEXTURE1);
         // glBindTexture(GL_TEXTURE_2D, textureWoodContainer); // maps to texture0 uniform
         // glActiveTexture(GL_TEXTURE0);
@@ -968,7 +1029,7 @@ int main(int argc, char** argv) {
         //     model = glm::translate(model, cubePositions[i]);
         //     float angle = 20.0f * i;
         //     model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
-        //     texturedShader.setMat4("model", model);
+        //     cubeWithTexCoordsShader.setMat4("model", model);
         //     glDrawArrays(GL_TRIANGLES, 0, 36);
         // }
 
@@ -978,6 +1039,7 @@ int main(int argc, char** argv) {
 
         /*** 3D axis arrows ***/
         if (showAxisArrows) {
+            glDisable(GL_DEPTH_TEST);
             axisArrowShader.use();
             axisArrowShader.setMat4("model", glm::mat4(1.0f));
             axisArrowShader.setMat4("view", view);
@@ -986,6 +1048,7 @@ int main(int argc, char** argv) {
             glLineWidth(4);
             glDrawArrays(GL_LINES, 0, 6);
             glBindVertexArray(0);
+            glEnable(GL_DEPTH_TEST);
         }
 
         glfwSwapBuffers(window);

@@ -48,6 +48,7 @@ unsigned loadCubemapTexture(std::vector<std::string> faces, TextureLoadConfig te
 
     unsigned int id;
     glGenTextures(1, &id);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, id);
     int width, height, nrComponents;
 
     for (auto i = 0u; i < faces.size(); i++) {
@@ -64,19 +65,17 @@ unsigned loadCubemapTexture(std::vector<std::string> faces, TextureLoadConfig te
             const auto textureName = faces[i].substr(faces[i].find_last_of('/') + 1, faces[i].size());
 
             std::cout << "loadCubemapTexture - '" << textureName << "' width: " << width << " height: " << height << " components: " << nrComponents << "\n";
-            glBindTexture(GL_TEXTURE_CUBE_MAP, id);
-            glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, textureLoadConfig.wrapS);
-            glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, textureLoadConfig.wrapT);
-            glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, textureLoadConfig.wrapR);
-            glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, textureLoadConfig.minFilter);
-            glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, textureLoadConfig.magFilter);
-            glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_X + i, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
-            glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
         } else {
             std::cout << "loadCubemapTexture - failed to load texture '" << faces[i] << "'\n";
         }
         stbi_image_free(data);
     }
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, textureLoadConfig.wrapS);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, textureLoadConfig.wrapT);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, textureLoadConfig.wrapR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, textureLoadConfig.minFilter);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, textureLoadConfig.magFilter);
 
     return id;
 }
