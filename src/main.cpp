@@ -265,8 +265,7 @@ int main(int argc, char** argv) {
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(0);
-
-    Shader skyboxReflectionShader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/skybox_reflection.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/skybox_reflection.frag"};
+    glBindVertexArray(0);
 
     const float cubeVerticesWithNormalsAndTextureCoords[] = {
             // positions          // normals           // texture coords
@@ -312,6 +311,23 @@ int main(int argc, char** argv) {
             -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 0.0f,
             -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f
     };
+    unsigned cubeWithNormAndTexCoordVAO;
+    glGenVertexArrays(1, &cubeWithNormAndTexCoordVAO);
+    glBindVertexArray(cubeWithNormAndTexCoordVAO);
+    unsigned cubeWithNormAndTexCoordVBO;
+    glGenBuffers(1, &cubeWithNormAndTexCoordVBO);
+    glBindBuffer(GL_ARRAY_BUFFER, cubeWithNormAndTexCoordVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVerticesWithNormalsAndTextureCoords), cubeVerticesWithNormalsAndTextureCoords, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(0 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(2);
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+    glEnableVertexAttribArray(0);
+    glBindVertexArray(0);
+
+    Shader skyboxWithEnvMappingShader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/skybox_env_mapping.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/skybox_env_mapping.frag"};
 
     constexpr glm::vec3 cubePositions[] = {
             glm::vec3( 0.0f,  0.0f,  0.0f),
@@ -758,15 +774,30 @@ int main(int argc, char** argv) {
         drawCubeWithTexCoords(glm::mat4{1.0f}, view, projection, textureWoodContainer->id);
         drawCubeWithTexCoords(glm::translate(glm::mat4{1.0f}, glm::vec3{1.0f, 1.0, 1.0}), view, projection, textureAwesomeFace->id);
         // cube with reflection
-        skyboxReflectionShader.use();
-        skyboxReflectionShader.setInt("skybox", 0);
-        skyboxReflectionShader.setMat4("model", glm::scale(glm::translate(glm::mat4{1.0f}, glm::vec3{-3.0f, 0.0f, 0.0}), glm::vec3{2.0, 2.0, 2.0}));
-        skyboxReflectionShader.setMat4("view", view);
-        skyboxReflectionShader.setMat4("projection", projection);
-        glBindVertexArray(cubeWithNormalsVAO);
+        skyboxWithEnvMappingShader.use();
+        skyboxWithEnvMappingShader.setInt("skybox", 0);
+        skyboxWithEnvMappingShader.setInt("texture0", 1);
+        skyboxWithEnvMappingShader.setMat4("view", view);
+        skyboxWithEnvMappingShader.setMat4("projection", projection);
+        glBindVertexArray(cubeWithNormAndTexCoordVAO);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxCubemapTexture);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, textureWoodContainer->id);
+        // draw cube with 2D texture
+        skyboxWithEnvMappingShader.setMat4("model", glm::scale(glm::translate(glm::mat4{1.0f}, glm::vec3{-6.0f, 0.0f, -2.0}), glm::vec3{2.0, 2.0, 2.0}));
         glDrawArrays(GL_TRIANGLES, 0, 36);
+        // draw cube with skybox reflection
+        skyboxWithEnvMappingShader.setBool("applyReflection", true);
+        skyboxWithEnvMappingShader.setMat4("model", glm::scale(glm::translate(glm::mat4{1.0f}, glm::vec3{-3.0f, 0.0f, 0.0}), glm::vec3{2.0, 2.0, 2.0}));
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+        skyboxWithEnvMappingShader.setBool("applyReflection", false);
+        // draw cube with skybox refraction
+        skyboxWithEnvMappingShader.setBool("applyRefraction", true);
+        skyboxWithEnvMappingShader.setMat4("model", glm::scale(glm::translate(glm::mat4{1.0f}, glm::vec3{-9.0f, 0.0f, -2.0}), glm::vec3{2.0, 2.0, 2.0}));
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+        skyboxWithEnvMappingShader.setBool("applyRefraction", false);
+        // draw skybox
         // vertex shader modified to always output 1 for z-buffer / depth, by doing so
         // GL_LEQUAL will only pass if there is no depth value stored in depth buffer
         // which means no fragment was drawn at the given screen space coordinate
