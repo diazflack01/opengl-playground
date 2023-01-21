@@ -774,12 +774,12 @@ int main(int argc, char** argv) {
         ImGui::Text("'Y' - yaw +5");
         ImGui::Text("'T' - yaw -5");
         ImGui::NewLine();
-        ImGui::Text("Viewport %.1f x %.1f", SCREEN_WIDTH, SCREEN_HEIGTH);
-        ImGui::Text("Camera pos:(%.2f, %.2f, %.2f), fov:%", camera.getPosition().x, camera.getPosition().y, camera.getPosition().z, camera.getFieldOfView());
+        ImGui::Text("Viewport %.0f x %.0f", SCREEN_WIDTH, SCREEN_HEIGTH);
+        ImGui::Text("Camera pos:(%.2f, %.2f, %.2f), fov:%.0f", camera.getPosition().x, camera.getPosition().y, camera.getPosition().z, camera.getFieldOfView());
         ImGui::Text("Mouse (%.3f, %.3f)", mousePosX, mousePosY);
         ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
         ImGui::NewLine();
-        ImGui::Checkbox("Show demo window", &show_demo_window);
+        ImGui::Checkbox("Show ImGui demo window", &show_demo_window);
         if (ImGui::SliderInt("glLineWidth", &lineWidth, 1, 10)) {
             glLineWidth(lineWidth);
         }
