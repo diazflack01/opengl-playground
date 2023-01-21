@@ -20,20 +20,22 @@
 float deltaTime = 0.0f;	// Time between current frame and last frame
 float lastFrame = 0.0f; // Time of last frame
 
-const float SCREEN_WIDTH = 800.0f;
-const float SCREEN_HEIGTH = 600.0f;
+const float SCREEN_WIDTH = 800.0f * 1.5;
+const float SCREEN_HEIGTH = 600.0f * 1.5;
 
 bool showAxisArrows = true;
-bool disableCursor = true;
+bool disableCursor = false;
 bool lastDisableCursor = disableCursor;
 bool drawWireFrame = false;
 bool lastDrawWireFrame = drawWireFrame;
+float mousePosX = 0.0;
+float mousePosY = 0.0;
 
 Camera::ConfigState cameraConfig{
         glm::vec3(0.0f, 0.0f,  8.0f),
         glm::vec3(0.0f, 0.0f, -1.0f),
         glm::vec3(0.0f, 1.0f,  0.0f),
-        Camera::BoundedData<float>{45.0f, 1.0f, 45.0f},
+        Camera::BoundedData<float>{45.0f, 1.0f, 90.0f},
         Camera::BoundedData<float>{0.0f, -89.f, 89.f},
         Camera::BoundedData<float>{-90.0f, std::nullopt, std::nullopt}, // rotate at x-axis so it looks forward
         Camera::Sensitivity{10.0f, 0.1f},
@@ -74,8 +76,8 @@ int main(int argc, char** argv) {
 
     glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGTH);
 
-    // disable mouse cursor by default;
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    glfwSetInputMode(window, GLFW_CURSOR, disableCursor ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
+    glPolygonMode(GL_FRONT_AND_BACK, drawWireFrame ? GL_LINE : GL_FILL);
 
     // event callbacks
     glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
@@ -730,10 +732,59 @@ int main(int argc, char** argv) {
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
 
+    /*** ImGui ***/
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO();
+    io.WantCaptureMouse = true;
+
+    // Setup Dear ImGui style
+    ImGui::StyleColorsDark();
+    // Setup Platform/Renderer backends
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    const char* glsl_version = "#version 330";
+    ImGui_ImplOpenGL3_Init(glsl_version);
+
+    bool show_demo_window = false;
+    int lineWidth = 1;
+
     while (!glfwWindowShouldClose(window)) {
         const float currentFrame = glfwGetTime();
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
+
+        glfwPollEvents();
+
+        // Start the Dear ImGui frame
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+
+        if (show_demo_window) {
+            ImGui::ShowDemoWindow(&show_demo_window);
+        }
+
+        ImGui::Begin("OpenGL Playground");
+        ImGui::Text("Hotkeys:");
+        ImGui::Text("'H' - show origin axis");
+        ImGui::Text("'J' - show/hide cursor");
+        ImGui::Text("'K' - wireframe/fill draw");
+        ImGui::Text("'X' - pitch +5");
+        ImGui::Text("'Z' - pitch -5");
+        ImGui::Text("'Y' - yaw +5");
+        ImGui::Text("'T' - yaw -5");
+        ImGui::NewLine();
+        ImGui::Text("Viewport %.1f x %.1f", SCREEN_WIDTH, SCREEN_HEIGTH);
+        ImGui::Text("Camera pos:(%.2f, %.2f, %.2f), fov:%", camera.getPosition().x, camera.getPosition().y, camera.getPosition().z, camera.getFieldOfView());
+        ImGui::Text("Mouse (%.3f, %.3f)", mousePosX, mousePosY);
+        ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+        ImGui::NewLine();
+        ImGui::Checkbox("Show demo window", &show_demo_window);
+        if (ImGui::SliderInt("glLineWidth", &lineWidth, 1, 10)) {
+            glLineWidth(lineWidth);
+        }
+        ImGui::End();
+        ImGui::Render();
 
         processKeyboardInputs(window);
 
@@ -1108,12 +1159,16 @@ int main(int argc, char** argv) {
             glBindVertexArray(axisArrowsVAO);
             glLineWidth(4);
             glDrawArrays(GL_LINES, 0, 6);
+            glLineWidth(lineWidth);
             glBindVertexArray(0);
             glEnable(GL_DEPTH_TEST);
         }
 
+        // Render ImGui last to make sure it will be drawn on top of the scene
+        // and won't get affected by any drawing & manipulation that is happening
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
         glfwSwapBuffers(window);
-        glfwPollEvents();
     }
 
     // depth testing
@@ -1205,6 +1260,8 @@ void keyboardCallback(GLFWwindow* window, int key, int scancode, int action, int
 
 void mouseCallback(GLFWwindow* window, double xpos, double ypos) {
     camera.processMouseMovement(xpos, ypos);
+    mousePosX = xpos;
+    mousePosY = ypos;
 }
 
 void scrollCallback(GLFWwindow* window, double xoffset, double yoffset)
