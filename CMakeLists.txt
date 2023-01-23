@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.16)
 
 project(opengl-playground)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 add_subdirectory(external/glfw)
 add_subdirectory(external/glad)
 add_subdirectory(external/stb)
