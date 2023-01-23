@@ -46,6 +46,7 @@ Camera::ConfigState cameraConfig{
 };
 
 Camera camera{cameraConfig};
+bool recalcClipSpace = true;
 
 void framebufferSizeCallback(GLFWwindow* window, int width, int height);
 void processKeyboardInputs(GLFWwindow* window);
@@ -561,6 +562,9 @@ int main(int argc, char** argv) {
     bool show_demo_window = false;
     int lineWidth = 1;
 
+    float x = 0.0, y = 0.0, z = 0.0;
+    glm::vec4 clipSpace{0.0};
+
     while (!glfwWindowShouldClose(window)) {
         const float currentFrame = glfwGetTime();
         deltaTime = currentFrame - lastFrame;
@@ -593,9 +597,28 @@ int main(int argc, char** argv) {
         ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
         ImGui::NewLine();
         ImGui::Checkbox("Show ImGui demo window", &show_demo_window);
+        // debugging clip space and depth buffer computations
         if (ImGui::SliderInt("glLineWidth", &lineWidth, 1, 10)) {
             glLineWidth(lineWidth);
         }
+        if (ImGui::InputFloat("x", &x, 1.0f, 1.0f, "%.2f")) {
+            recalcClipSpace = true;
+        }
+        if (ImGui::InputFloat("y", &y, 1.0f, 1.0f, "%.2f")) {
+            recalcClipSpace = true;
+        }
+        if (ImGui::InputFloat("z", &z, 1.0f, 1.0f, "%.2f")) {
+            recalcClipSpace = true;
+        }
+        if (recalcClipSpace) {
+            const glm::vec4 worldMat{x, y, z, 1.0};
+            const glm::mat4 viewMat = camera.getViewMatrix();
+            const glm::mat4 projMat = glm::perspective(glm::radians(camera.getFieldOfView()), SCREEN_WIDTH/SCREEN_HEIGTH, 0.1f, 100.0f);
+            clipSpace = projMat * viewMat * worldMat;
+            recalcClipSpace= false;
+        }
+        ImGui::Text("Clip space (%.2f, %.2f, %.2f, %.2f)", clipSpace.x, clipSpace.y, clipSpace.z, clipSpace.w);
+        ImGui::Text("Perspective Division (%.2f, %.2f, %.2f, %.2f)", clipSpace.x / clipSpace.w, clipSpace.y/ clipSpace.w , clipSpace.z / clipSpace.w, clipSpace.w / clipSpace.w);
         ImGui::End();
         ImGui::Render();
 
@@ -1072,7 +1095,7 @@ void keyboardCallback(GLFWwindow* window, int key, int scancode, int action, int
 }
 
 void mouseCallback(GLFWwindow* window, double xpos, double ypos) {
-    camera.processMouseMovement(xpos, ypos);
+//    camera.processMouseMovement(xpos, ypos);
     mousePosX = xpos;
     mousePosY = ypos;
 }
@@ -1080,4 +1103,5 @@ void mouseCallback(GLFWwindow* window, double xpos, double ypos) {
 void scrollCallback(GLFWwindow* window, double xoffset, double yoffset)
 {
     camera.processMouseScroll(yoffset);
+    recalcClipSpace = true;
 }
