@@ -18,6 +18,7 @@
 #include "Model.hpp"
 
 #include "TestingData.hpp"
+#include "glm/gtc/type_ptr.hpp"
 
 float deltaTime = 0.0f;	// Time between current frame and last frame
 float lastFrame = 0.0f; // Time of last frame
@@ -30,6 +31,9 @@ bool disableCursor = false;
 bool lastDisableCursor = disableCursor;
 bool drawWireFrame = false;
 bool lastDrawWireFrame = drawWireFrame;
+bool enableCameraMouseCallbackMovement = false;
+bool enableCulling = false;
+bool cullFrontFace = true;
 float mousePosX = 0.0;
 float mousePosY = 0.0;
 
@@ -330,66 +334,21 @@ int main(int argc, char** argv) {
     blendingShader.setInt("texture0", 1);
 
     /*** Face Culling ***/
-    // CCW - to create this, one should imagine being in front of the face and labeling the vertices in CCW
-//    constexpr float cubeVerticesCCW[] = {
-//            // Back face
-//            -0.5f, -0.5f, -0.5f,  0.0f, 0.0f, // Bottom-left
-//            0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-right
-//            0.5f, -0.5f, -0.5f,  1.0f, 0.0f, // bottom-right
-//            0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-right
-//            -0.5f, -0.5f, -0.5f,  0.0f, 0.0f, // bottom-left
-//            -0.5f,  0.5f, -0.5f,  0.0f, 1.0f, // top-left
-//            // Front face
-//            -0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-left
-//            0.5f, -0.5f,  0.5f,  1.0f, 0.0f, // bottom-right
-//            0.5f,  0.5f,  0.5f,  1.0f, 1.0f, // top-right
-//            0.5f,  0.5f,  0.5f,  1.0f, 1.0f, // top-right
-//            -0.5f,  0.5f,  0.5f,  0.0f, 1.0f, // top-left
-//            -0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-left
-//            // Left face
-//            -0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // top-right
-//            -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-left
-//            -0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // bottom-left
-//            -0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // bottom-left
-//            -0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-right
-//            -0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // top-right
-//            // Right face
-//            0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // top-left
-//            0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // bottom-right
-//            0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-right
-//            0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // bottom-right
-//            0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // top-left
-//            0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-left
-//            // Bottom face
-//            -0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // top-right
-//            0.5f, -0.5f, -0.5f,  1.0f, 1.0f, // top-left
-//            0.5f, -0.5f,  0.5f,  1.0f, 0.0f, // bottom-left
-//            0.5f, -0.5f,  0.5f,  1.0f, 0.0f, // bottom-left
-//            -0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-right
-//            -0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // top-right
-//            // Top face
-//            -0.5f,  0.5f, -0.5f,  0.0f, 1.0f, // top-left
-//            0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // bottom-right
-//            0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-right
-//            0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // bottom-right
-//            -0.5f,  0.5f, -0.5f,  0.0f, 1.0f, // top-left
-//            -0.5f,  0.5f,  0.5f,  0.0f, 0.0f  // bottom-left
-//    };
-//    unsigned cubeCCWFaceCullingVAO;
-//    glGenVertexArrays(1, &cubeCCWFaceCullingVAO);
-//    glBindVertexArray(cubeCCWFaceCullingVAO);
-//    unsigned cubeCCWFaceCullingVBO;
-//    glGenBuffers(1, &cubeCCWFaceCullingVBO);
-//    glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVerticesCCW), cubeVerticesCCW, GL_STATIC_DRAW);
-//    glEnableVertexAttribArray(0);
-//    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(0 * sizeof(float)));
-//    glEnableVertexAttribArray(1);
-//    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-//    glEnableVertexAttribArray(0);
-//    // intentionally cull front-face
+    unsigned cubeCCWFaceCullingVAO;
+    glGenVertexArrays(1, &cubeCCWFaceCullingVAO);
+    glBindVertexArray(cubeCCWFaceCullingVAO);
+    unsigned cubeCCWFaceCullingVBO;
+    glGenBuffers(1, &cubeCCWFaceCullingVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(testing_data::cubeVerticesCCW), testing_data::cubeVerticesCCW, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(0 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(0);
+    // intentionally cull front-face
 //    glEnable(GL_CULL_FACE);
 //    glCullFace(GL_FRONT);
-//    glFrontFace(GL_CCW);
+    glFrontFace(GL_CCW);
 
     /*** Framebuffer ***/
     // TODO: Handle resizing of window
@@ -542,6 +501,44 @@ int main(int argc, char** argv) {
     skyboxShader.use();
     skyboxShader.setInt("skybox", 0);
 
+    /*** Advanced Data & GLSL ***/
+    // points
+    unsigned pointsVAO;
+    glGenVertexArrays(1, &pointsVAO);
+    unsigned pointsVBO;
+    glGenBuffers(1, &pointsVBO);
+    glBindVertexArray(pointsVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, pointsVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(testing_data::points), testing_data::points, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)(0 * sizeof(float)));
+    glBindVertexArray(0);
+    glEnable(GL_PROGRAM_POINT_SIZE);
+    Shader pointsShader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/advanced_data_glsl/basic.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/advanced_data_glsl/basic.frag"};
+    // cube with 4 quadrant
+    Shader cube4QuadrantShader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/advanced_data_glsl/cube.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/advanced_data_glsl/cube_quadrants.frag"};
+    cube4QuadrantShader.use();
+    cube4QuadrantShader.setInt("texture0", 0);
+    // cube with different texture for back face
+    Shader cubeFrontBackFaceTextured{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/advanced_data_glsl/cube_front_back_face_textured.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/advanced_data_glsl/cube_front_back_face_textured.frag"};
+    cubeFrontBackFaceTextured.use();
+    cubeFrontBackFaceTextured.setInt("texture0", 0);
+    cubeFrontBackFaceTextured.setInt("texture1", 1);
+    // UBO for view, projection
+    const unsigned viewProjUBOIndexCubeQuadrant = glGetUniformBlockIndex(cube4QuadrantShader.getId(), "ViewProjection");
+    const unsigned viewProjUBOIndexCubeFrontBackFaceTexture = glGetUniformBlockIndex(cubeFrontBackFaceTextured.getId(), "ViewProjection");
+    glUniformBlockBinding(cube4QuadrantShader.getId(), viewProjUBOIndexCubeQuadrant, 0);
+    glUniformBlockBinding(cubeFrontBackFaceTextured.getId(), viewProjUBOIndexCubeFrontBackFaceTexture, 0);
+    unsigned viewProjectionUBO;
+    glGenBuffers(1, &viewProjectionUBO);
+    glBindBuffer(GL_UNIFORM_BUFFER, viewProjectionUBO);
+    // constexpr auto uboViewProjSize = 16 * 4 * 2; // 2 mat4. Per column in mat4 is 16 bytes
+    constexpr auto uboViewProjSize = 2 * sizeof(glm::mat4); // same size as above
+    glBufferData(GL_UNIFORM_BUFFER, uboViewProjSize, nullptr, GL_STATIC_DRAW);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+    glBindBufferBase(GL_UNIFORM_BUFFER, 0, viewProjectionUBO);
+    // glBindBufferRange(GL_UNIFORM_BUFFER, 0, viewProjectionUBO, 0, uboViewProjSize);
+
     // z-buffer
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
@@ -594,6 +591,20 @@ int main(int argc, char** argv) {
         ImGui::Text("Viewport %.0f x %.0f", SCREEN_WIDTH, SCREEN_HEIGTH);
         ImGui::Text("Camera pos:(%.2f, %.2f, %.2f), fov:%.0f", camera.getPosition().x, camera.getPosition().y, camera.getPosition().z, camera.getFieldOfView());
         ImGui::Text("Mouse (%.3f, %.3f)", mousePosX, mousePosY);
+        ImGui::Checkbox("Enable camera mouse movement", &enableCameraMouseCallbackMovement);
+        if (ImGui::Checkbox("Enable Culling", &enableCulling)) {
+            if (enableCulling) {
+                glEnable(GL_CULL_FACE);
+                glCullFace(cullFrontFace ? GL_FRONT : GL_BACK);
+            } else {
+                glDisable(GL_CULL_FACE);
+            }
+        }
+
+        if (enableCulling && ImGui::Checkbox("Front face cull", &cullFrontFace)) {
+            glCullFace(cullFrontFace ? GL_FRONT : GL_BACK);
+        }
+
         ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
         ImGui::NewLine();
         ImGui::Checkbox("Show ImGui demo window", &show_demo_window);
@@ -660,47 +671,87 @@ int main(int argc, char** argv) {
         const glm::mat4 view = camera.getViewMatrix();
         const glm::mat4 projection = glm::perspective(glm::radians(camera.getFieldOfView()), SCREEN_WIDTH/SCREEN_HEIGTH, 0.1f, 100.0f);
 
-        /*** Cubemaps ***/
-        glEnable(GL_DEPTH_TEST);
-        drawCubeWithTexCoords(glm::mat4{1.0f}, view, projection, textureWoodContainer->id);
-        drawCubeWithTexCoords(glm::translate(glm::mat4{1.0f}, glm::vec3{1.0f, 1.0, 1.0}), view, projection, textureAwesomeFace->id);
-        // cube with reflection
-        skyboxWithEnvMappingShader.use();
-        skyboxWithEnvMappingShader.setInt("skybox", 0);
-        skyboxWithEnvMappingShader.setInt("texture0", 1);
-        skyboxWithEnvMappingShader.setMat4("view", view);
-        skyboxWithEnvMappingShader.setMat4("projection", projection);
-        glBindVertexArray(cubeWithNormAndTexCoordVAO);
+        /*** Advanced Data & GLSL ***/
+        // set view projection UBO
+        glBindBuffer(GL_UNIFORM_BUFFER, viewProjectionUBO);
+        glBufferSubData(GL_UNIFORM_BUFFER, 0, uboViewProjSize / 2, glm::value_ptr(view));
+        glBufferSubData(GL_UNIFORM_BUFFER, uboViewProjSize / 2, uboViewProjSize / 2, glm::value_ptr(projection));
+        glBindBuffer(GL_UNIFORM_BUFFER, 0);
+        // points
+        glBindVertexArray(pointsVAO);
+        pointsShader.use();
+        pointsShader.setMat4("model", glm::translate(glm::mat4{1.0f}, glm::vec3(x, y, z)));
+        pointsShader.setMat4("view", view);
+        pointsShader.setMat4("projection", projection);
+        glDrawArrays(GL_POINTS, 0, 3);
+        glBindVertexArray(0);
+        // cube 4 quadrants
+        glBindVertexArray(cubeWithTexCoordsVAO);
+        cube4QuadrantShader.use();
+        cube4QuadrantShader.setMat4("model", glm::mat4{1.0f});
+        // cube4QuadrantShader.setMat4("view", view);
+        // cube4QuadrantShader.setMat4("projection", projection);
+        cube4QuadrantShader.setFloat("screenWidth", SCREEN_WIDTH);
+        cube4QuadrantShader.setFloat("screenHeight", SCREEN_HEIGTH);
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxCubemapTexture);
-        glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, textureWoodContainer->id);
-        // draw cube with 2D texture
-        skyboxWithEnvMappingShader.setMat4("model", glm::scale(glm::translate(glm::mat4{1.0f}, glm::vec3{-6.0f, 0.0f, -2.0}), glm::vec3{2.0, 2.0, 2.0}));
         glDrawArrays(GL_TRIANGLES, 0, 36);
-        // draw cube with skybox reflection
-        skyboxWithEnvMappingShader.setBool("applyReflection", true);
-        skyboxWithEnvMappingShader.setMat4("model", glm::scale(glm::translate(glm::mat4{1.0f}, glm::vec3{-3.0f, 0.0f, 0.0}), glm::vec3{2.0, 2.0, 2.0}));
-        glDrawArrays(GL_TRIANGLES, 0, 36);
-        skyboxWithEnvMappingShader.setBool("applyReflection", false);
-        // draw cube with skybox refraction
-        skyboxWithEnvMappingShader.setBool("applyRefraction", true);
-        skyboxWithEnvMappingShader.setMat4("model", glm::scale(glm::translate(glm::mat4{1.0f}, glm::vec3{-9.0f, 0.0f, -2.0}), glm::vec3{2.0, 2.0, 2.0}));
-        glDrawArrays(GL_TRIANGLES, 0, 36);
-        skyboxWithEnvMappingShader.setBool("applyRefraction", false);
-        // draw skybox
-        // vertex shader modified to always output 1 for z-buffer / depth, by doing so
-        // GL_LEQUAL will only pass if there is no depth value stored in depth buffer
-        // which means no fragment was drawn at the given screen space coordinate
-        glDepthFunc(GL_LEQUAL);
-        skyboxShader.use();
-        skyboxShader.setMat4("view", glm::mat4(glm::mat3(view))); // remove the translation part of view matrix
-        skyboxShader.setMat4("projection", projection);
-        glBindVertexArray(skyboxVAO);
+        glBindVertexArray(0);
+        // cube with different texture for back face
+        cubeFrontBackFaceTextured.use();
+        glBindVertexArray(cubeCCWFaceCullingVAO);
+        cubeFrontBackFaceTextured.use();
+        cubeFrontBackFaceTextured.setMat4("model", glm::translate(glm::mat4{1.0f}, glm::vec3{1.25, 1.25, 0.0}));
+        // cubeFrontBackFaceTextured.setMat4("view", view);
+        // cubeFrontBackFaceTextured.setMat4("projection", projection);
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxCubemapTexture);
-        glDrawArrays(GL_TRIANGLES, 0, sizeof(skyboxVertices)/sizeof(decltype(skyboxVertices[0])));
-        glDepthFunc(GL_LESS);
+        glBindTexture(GL_TEXTURE_2D, textureWoodContainer->id);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, textureAwesomeFace->id);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+        glBindVertexArray(0);
+
+        /*** Cubemaps ***/
+//        glEnable(GL_DEPTH_TEST);
+//        drawCubeWithTexCoords(glm::mat4{1.0f}, view, projection, textureWoodContainer->id);
+//        drawCubeWithTexCoords(glm::translate(glm::mat4{1.0f}, glm::vec3{1.0f, 1.0, 1.0}), view, projection, textureAwesomeFace->id);
+//        // cube with reflection
+//        skyboxWithEnvMappingShader.use();
+//        skyboxWithEnvMappingShader.setInt("skybox", 0);
+//        skyboxWithEnvMappingShader.setInt("texture0", 1);
+//        skyboxWithEnvMappingShader.setMat4("view", view);
+//        skyboxWithEnvMappingShader.setMat4("projection", projection);
+//        glBindVertexArray(cubeWithNormAndTexCoordVAO);
+//        glActiveTexture(GL_TEXTURE0);
+//        glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxCubemapTexture);
+//        glActiveTexture(GL_TEXTURE1);
+//        glBindTexture(GL_TEXTURE_2D, textureWoodContainer->id);
+//        // draw cube with 2D texture
+//        skyboxWithEnvMappingShader.setMat4("model", glm::scale(glm::translate(glm::mat4{1.0f}, glm::vec3{-6.0f, 0.0f, -2.0}), glm::vec3{2.0, 2.0, 2.0}));
+//        glDrawArrays(GL_TRIANGLES, 0, 36);
+//        // draw cube with skybox reflection
+//        skyboxWithEnvMappingShader.setBool("applyReflection", true);
+//        skyboxWithEnvMappingShader.setMat4("model", glm::scale(glm::translate(glm::mat4{1.0f}, glm::vec3{-3.0f, 0.0f, 0.0}), glm::vec3{2.0, 2.0, 2.0}));
+//        glDrawArrays(GL_TRIANGLES, 0, 36);
+//        skyboxWithEnvMappingShader.setBool("applyReflection", false);
+//        // draw cube with skybox refraction
+//        skyboxWithEnvMappingShader.setBool("applyRefraction", true);
+//        skyboxWithEnvMappingShader.setMat4("model", glm::scale(glm::translate(glm::mat4{1.0f}, glm::vec3{-9.0f, 0.0f, -2.0}), glm::vec3{2.0, 2.0, 2.0}));
+//        glDrawArrays(GL_TRIANGLES, 0, 36);
+//        skyboxWithEnvMappingShader.setBool("applyRefraction", false);
+//        // draw skybox
+//        // vertex shader modified to always output 1 for z-buffer / depth, by doing so
+//        // GL_LEQUAL will only pass if there is no depth value stored in depth buffer
+//        // which means no fragment was drawn at the given screen space coordinate
+//        glDepthFunc(GL_LEQUAL);
+//        skyboxShader.use();
+//        skyboxShader.setMat4("view", glm::mat4(glm::mat3(view))); // remove the translation part of view matrix
+//        skyboxShader.setMat4("projection", projection);
+//        glBindVertexArray(skyboxVAO);
+//        glActiveTexture(GL_TEXTURE0);
+//        glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxCubemapTexture);
+//        glDrawArrays(GL_TRIANGLES, 0, sizeof(skyboxVertices)/sizeof(decltype(skyboxVertices[0])));
+//        glDepthFunc(GL_LESS);
 
 //        /*** Framebuffer - 1 ***/
 //        // should uncomment `Depth Testing` section for drawing in framebuffer
@@ -1095,9 +1146,12 @@ void keyboardCallback(GLFWwindow* window, int key, int scancode, int action, int
 }
 
 void mouseCallback(GLFWwindow* window, double xpos, double ypos) {
-//    camera.processMouseMovement(xpos, ypos);
+    if (enableCameraMouseCallbackMovement) {
+        camera.processMouseMovement(xpos, ypos);
+    }
     mousePosX = xpos;
-    mousePosY = ypos;
+    // GLFW originates from top-left, OpenGL is bottom-left
+    mousePosY = SCREEN_HEIGTH - ypos;
 }
 
 void scrollCallback(GLFWwindow* window, double xoffset, double yoffset)
