@@ -2,10 +2,11 @@
 
 #include <string>
 #include <glm/matrix.hpp>
+#include <optional>
 
 class Shader {
 public:
-    Shader(const char* vertexShaderSourcePath, const char* fragmentShaderSourcePath);
+    Shader(const char* vertexShaderSourcePath, const char* fragmentShaderSourcePath, std::optional<const char*> geometryShaderSourcePath = std::nullopt);
 
     void use();
 
