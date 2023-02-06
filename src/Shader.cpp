@@ -160,3 +160,7 @@ void Shader::setVec3Float(const std::string &name, float v1, float v2, float v3)
 void Shader::setUInt(const std::string &name, unsigned int value) {
     glUniform1ui(glGetUniformLocation(getId(), name.c_str()), value);
 }
+
+void Shader::setVec2(const std::string& name, const glm::vec2& v) {
+    setVec2Float(name, v.x, v.y);
+}

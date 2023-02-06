@@ -539,6 +539,50 @@ int main(int argc, char** argv) {
     glBindBufferBase(GL_UNIFORM_BUFFER, 0, viewProjectionUBO);
     // glBindBufferRange(GL_UNIFORM_BUFFER, 0, viewProjectionUBO, 0, uboViewProjSize);
 
+    /*** Instancing ***/
+    unsigned instancingVAO;
+    glGenVertexArrays(1, &instancingVAO);
+    glBindVertexArray(instancingVAO);
+    unsigned instancingVBO;
+    glGenBuffers(1, &instancingVBO);
+    glBindBuffer(GL_ARRAY_BUFFER, instancingVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(testing_data::instancing::quadVertices), testing_data::instancing::quadVertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(0 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(2 * sizeof(float)));
+    glEnableVertexAttribArray(0);
+    // instancing via uniform offsets in vertex shader
+    Shader instancingViaUniformOffsetShader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/instancing/instancing_via_uniform_offset.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/instancing/instancing_common.frag"};
+    instancingViaUniformOffsetShader.use();
+    glm::vec2 translations[100];
+    int index = 0;
+    float offset = 0.1f;
+    for(int y = -10; y < 10; y += 2)
+    {
+        for(int x = -10; x < 10; x += 2)
+        {
+            glm::vec2 translation;
+            translation.x = (float)x / 10.0f + offset;
+            translation.y = (float)y / 10.0f + offset;
+            translations[index] = translation;
+            instancingViaUniformOffsetShader.setVec2(("offsets[" + std::to_string(index) + "]"), translation);
+            ++index;
+        }
+    }
+    // instancing via attribute offset data in vertex shader
+    unsigned instancingOffsetVBO;
+    glGenBuffers(1, &instancingOffsetVBO);
+    glBindBuffer(GL_ARRAY_BUFFER, instancingOffsetVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec2) * 100, translations, GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glEnableVertexAttribArray(2);
+    glBindBuffer(GL_ARRAY_BUFFER, instancingOffsetVBO); // re-bind new buffer before setting attribute pointer because buffer is currently set to 0 (default)
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)(0 * sizeof(float)));
+    glEnableVertexAttribArray(0);
+    glVertexAttribDivisor(2, 1); // update attribute 2 every 1 instance
+    Shader instancingViaAttributeOffsetShader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/instancing/instancing_via_attrib_offset.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/instancing/instancing_common.frag"};
+
     // z-buffer
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
@@ -671,45 +715,54 @@ int main(int argc, char** argv) {
         const glm::mat4 view = camera.getViewMatrix();
         const glm::mat4 projection = glm::perspective(glm::radians(camera.getFieldOfView()), SCREEN_WIDTH/SCREEN_HEIGTH, 0.1f, 100.0f);
 
+        /*** Instancing ***/
+        // using uniform offsets in vertex shader
+        // instancingViaUniformOffsetShader.use();
+        // using attribute offsets in vertex shader
+        instancingViaAttributeOffsetShader.use();
+        glBindVertexArray(instancingVAO);
+        glDrawArraysInstanced(GL_TRIANGLES, 0, 6, 100);
+        glBindVertexArray(0);
+
         /*** Advanced Data & GLSL ***/
-        // set view projection UBO
-        glBindBuffer(GL_UNIFORM_BUFFER, viewProjectionUBO);
-        glBufferSubData(GL_UNIFORM_BUFFER, 0, uboViewProjSize / 2, glm::value_ptr(view));
-        glBufferSubData(GL_UNIFORM_BUFFER, uboViewProjSize / 2, uboViewProjSize / 2, glm::value_ptr(projection));
-        glBindBuffer(GL_UNIFORM_BUFFER, 0);
-        // points
-        glBindVertexArray(pointsVAO);
-        pointsShader.use();
-        pointsShader.setMat4("model", glm::translate(glm::mat4{1.0f}, glm::vec3(x, y, z)));
-        pointsShader.setMat4("view", view);
-        pointsShader.setMat4("projection", projection);
-        glDrawArrays(GL_POINTS, 0, 3);
-        glBindVertexArray(0);
-        // cube 4 quadrants
-        glBindVertexArray(cubeWithTexCoordsVAO);
-        cube4QuadrantShader.use();
-        cube4QuadrantShader.setMat4("model", glm::mat4{1.0f});
-        // cube4QuadrantShader.setMat4("view", view);
-        // cube4QuadrantShader.setMat4("projection", projection);
-        cube4QuadrantShader.setFloat("screenWidth", SCREEN_WIDTH);
-        cube4QuadrantShader.setFloat("screenHeight", SCREEN_HEIGTH);
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, textureWoodContainer->id);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
-        glBindVertexArray(0);
-        // cube with different texture for back face
-        cubeFrontBackFaceTextured.use();
-        glBindVertexArray(cubeCCWFaceCullingVAO);
-        cubeFrontBackFaceTextured.use();
-        cubeFrontBackFaceTextured.setMat4("model", glm::translate(glm::mat4{1.0f}, glm::vec3{1.25, 1.25, 0.0}));
-        // cubeFrontBackFaceTextured.setMat4("view", view);
-        // cubeFrontBackFaceTextured.setMat4("projection", projection);
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, textureWoodContainer->id);
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, textureAwesomeFace->id);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
-        glBindVertexArray(0);
+        // // set view projection UBO
+        // glBindBuffer(GL_UNIFORM_BUFFER, viewProjectionUBO);
+        // glBufferSubData(GL_UNIFORM_BUFFER, 0, uboViewProjSize / 2, glm::value_ptr(view));
+        // glBufferSubData(GL_UNIFORM_BUFFER, uboViewProjSize / 2, uboViewProjSize / 2, glm::value_ptr(projection));
+        // glBindBuffer(GL_UNIFORM_BUFFER, 0);
+        // // points
+        // glBindVertexArray(pointsVAO);
+        // pointsShader.use();
+        // pointsShader.setMat4("model", glm::translate(glm::mat4{1.0f}, glm::vec3(x, y, z)));
+        // pointsShader.setMat4("view", view);
+        // pointsShader.setMat4("projection", projection);
+        // glDrawArrays(GL_POINTS, 0, 3);
+        // glBindVertexArray(0);
+        // // cube 4 quadrants
+        // glBindVertexArray(cubeWithTexCoordsVAO);
+        // cube4QuadrantShader.use();
+        // cube4QuadrantShader.setMat4("model", glm::mat4{1.0f});
+        // // cube4QuadrantShader.setMat4("view", view);
+        // // cube4QuadrantShader.setMat4("projection", projection);
+        // cube4QuadrantShader.setFloat("screenWidth", SCREEN_WIDTH);
+        // cube4QuadrantShader.setFloat("screenHeight", SCREEN_HEIGTH);
+        // glActiveTexture(GL_TEXTURE0);
+        // glBindTexture(GL_TEXTURE_2D, textureWoodContainer->id);
+        // glDrawArrays(GL_TRIANGLES, 0, 36);
+        // glBindVertexArray(0);
+        // // cube with different texture for back face
+        // cubeFrontBackFaceTextured.use();
+        // glBindVertexArray(cubeCCWFaceCullingVAO);
+        // cubeFrontBackFaceTextured.use();
+        // cubeFrontBackFaceTextured.setMat4("model", glm::translate(glm::mat4{1.0f}, glm::vec3{1.25, 1.25, 0.0}));
+        // // cubeFrontBackFaceTextured.setMat4("view", view);
+        // // cubeFrontBackFaceTextured.setMat4("projection", projection);
+        // glActiveTexture(GL_TEXTURE0);
+        // glBindTexture(GL_TEXTURE_2D, textureWoodContainer->id);
+        // glActiveTexture(GL_TEXTURE1);
+        // glBindTexture(GL_TEXTURE_2D, textureAwesomeFace->id);
+        // glDrawArrays(GL_TRIANGLES, 0, 36);
+        // glBindVertexArray(0);
 
         /*** Cubemaps ***/
 //        glEnable(GL_DEPTH_TEST);
