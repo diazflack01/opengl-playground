@@ -15,6 +15,25 @@ void Model::draw(Shader &shader) {
     }
 }
 
+void Model::drawInstanced(Shader &shader) {
+    for (auto& mesh : mMeshes) {
+        mesh.drawInstanced(shader);
+    }
+}
+
+void Model::setInstancedModelMatrices(const std::vector<glm::mat4>& modelMatrices) {
+    unsigned int buffer;
+    glGenBuffers(1, &buffer);
+    glBindBuffer(GL_ARRAY_BUFFER, buffer);
+    glBufferData(GL_ARRAY_BUFFER, modelMatrices.size() * sizeof(glm::mat4), modelMatrices.data(), GL_STATIC_DRAW);
+
+    for (auto& mesh : mMeshes) {
+        mesh.setInstancedModelMatrices(modelMatrices);
+    }
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+}
+
 void Model::loadModel(std::string path) {
     ScopedTimer timer{std::string{"loadModel - "} + path};
     Assimp::Importer import;

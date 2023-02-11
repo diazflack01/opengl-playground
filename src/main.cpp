@@ -38,7 +38,7 @@ float mousePosX = 0.0;
 float mousePosY = 0.0;
 
 Camera::ConfigState cameraConfig{
-        glm::vec3(0.0f, 0.0f,  8.0f),
+        glm::vec3(0.0f, 0.0f,  100.0f),
         glm::vec3(0.0f, 0.0f, -1.0f),
         glm::vec3(0.0f, 1.0f,  0.0f),
         Camera::BoundedData<float>{45.0f, 1.0f, 90.0f},
@@ -120,7 +120,9 @@ int main(int argc, char** argv) {
     // Shader lightShader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/light.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/light.frag"};
     Shader lightShader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/light_phong.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/light_phong.frag"};
     Shader lightSrcShader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/light.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/light_src.frag"};
-    Shader modelShader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/model_loading.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/model_loading_with_lighting.frag"};
+    Shader modelWithLightingShader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/model_loading.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/model_loading_with_lighting.frag"};
+    Shader modelNoLightingShader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/model_loading.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/model_loading.frag"};
+    Shader modelInstancedShader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/instancing/model_loading.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/instancing/model_loading.frag"};
     // Model model{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/models/backpack/backpack.obj"};
     Shader depthTestingShader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/depth_testing.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/depth_testing.frag"};
     Shader stencilTestingShader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/stencil_testing.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/stencil_testing.frag"};
@@ -583,6 +585,44 @@ int main(int argc, char** argv) {
     glVertexAttribDivisor(2, 1); // update attribute 2 every 1 instance
     Shader instancingViaAttributeOffsetShader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/instancing/instancing_via_attrib_offset.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/instancing/instancing_common.frag"};
 
+    Model planetModel{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/models/planet/planet.obj"};
+    Model rockModel{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/models/rock/rock.obj"};
+
+    unsigned int amount = 900000;
+    std::vector<glm::mat4> modelMatrices;
+    modelMatrices.reserve(amount);
+    srand(glfwGetTime()); // initialize random seed	
+    float radius = 50.0;
+    float offset_ = 2.5f;
+    for(unsigned int i = 0; i < amount; i++)
+    {
+        glm::mat4 model = glm::mat4(1.0f);
+        // 1. translation: displace along circle with 'radius' in range [-offset_, offset_]
+        float angle = (float)i / (float)amount * 360.0f;
+        float displacement = (rand() % (int)(2 * offset_ * 100)) / 100.0f - offset_;
+        float x = sin(angle) * radius + displacement;
+        displacement = (rand() % (int)(2 * offset_ * 100)) / 100.0f - offset_;
+        float y = displacement * 0.4f; // keep height of field smaller compared to width of x and z
+        displacement = (rand() % (int)(2 * offset_ * 100)) / 100.0f - offset_;
+        float z = cos(angle) * radius + displacement;
+        model = glm::translate(model, glm::vec3(x, y, z));
+
+        // 2. scale: scale between 0.05 and 0.25f
+        float scale = (rand() % 20) / 100.0f + 0.05;
+        model = glm::scale(model, glm::vec3(scale));
+
+        // 3. rotation: add random rotation around a (semi)randomly picked rotation axis vector
+        float rotAngle = (rand() % 360);
+        model = glm::rotate(model, rotAngle, glm::vec3(0.4f, 0.6f, 0.8f));
+
+        // 4. now add to list of matrices
+        // modelMatrices[i] = model;
+        modelMatrices.push_back(model);
+    }
+
+    // this call allocates GPU buffer, calling this multiple times
+    rockModel.setInstancedModelMatrices(modelMatrices);
+
     // z-buffer
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
@@ -719,10 +759,25 @@ int main(int argc, char** argv) {
         // using uniform offsets in vertex shader
         // instancingViaUniformOffsetShader.use();
         // using attribute offsets in vertex shader
-        instancingViaAttributeOffsetShader.use();
-        glBindVertexArray(instancingVAO);
-        glDrawArraysInstanced(GL_TRIANGLES, 0, 6, 100);
-        glBindVertexArray(0);
+        // instancingViaAttributeOffsetShader.use();
+        // glBindVertexArray(instancingVAO);
+        // glDrawArraysInstanced(GL_TRIANGLES, 0, 6, 100);
+        // glBindVertexArray(0);
+
+        // draw planet
+        modelNoLightingShader.use();
+        glm::mat4 model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(0.0f, -3.0f, 0.0f));
+        model = glm::scale(model, glm::vec3(4.0f, 4.0f, 4.0f));
+        modelNoLightingShader.setMat4("model", model);
+        modelNoLightingShader.setMat4("view", view);
+        modelNoLightingShader.setMat4("projection", projection);
+        planetModel.draw(modelNoLightingShader);
+        // draw meteorites
+        modelInstancedShader.use();
+        modelInstancedShader.setMat4("view", view);
+        modelInstancedShader.setMat4("projection", projection);
+        rockModel.drawInstanced(modelInstancedShader);
 
         /*** Advanced Data & GLSL ***/
         // // set view projection UBO

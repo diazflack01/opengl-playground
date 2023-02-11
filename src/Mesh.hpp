@@ -5,6 +5,7 @@
 #include <glm/glm.hpp>
 
 #include "Shader.hpp"
+#include "glm/fwd.hpp"
 
 class Mesh {
 public:
@@ -24,6 +25,10 @@ public:
 
     void draw(Shader& shader);
 
+    void setInstancedModelMatrices(const std::vector<glm::mat4>& modelMatrices);
+
+    void drawInstanced(Shader& shader);
+
 private:
     std::vector<Vertex> mVertices;
     std::vector<unsigned int> mIndices;
@@ -33,5 +38,8 @@ private:
     unsigned int mVBO;
     unsigned int mEBO;
 
+    std::optional<int> mInstanceCount;
+
     void setupMesh();
+    void bindTextures(Shader& shader);
 };

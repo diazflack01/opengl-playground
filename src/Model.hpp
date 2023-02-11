@@ -8,12 +8,18 @@
 
 #include "Mesh.hpp"
 #include "Shader.hpp"
+#include "glm/fwd.hpp"
 
 class Model {
 public:
     Model(const char* path);
 
     void draw(Shader &shader);
+
+    void setInstancedModelMatrices(const std::vector<glm::mat4>& modelMatrices);
+
+    void drawInstanced(Shader &shader);
+
 private:
     // model data
     std::vector<Mesh> mMeshes;
