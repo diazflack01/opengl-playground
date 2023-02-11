@@ -33,12 +33,13 @@ bool drawWireFrame = false;
 bool lastDrawWireFrame = drawWireFrame;
 bool enableCameraMouseCallbackMovement = false;
 bool enableCulling = false;
+bool enableMultisampling = false;
 bool cullFrontFace = true;
 float mousePosX = 0.0;
 float mousePosY = 0.0;
 
 Camera::ConfigState cameraConfig{
-        glm::vec3(0.0f, 0.0f,  100.0f),
+        glm::vec3(-1.0f, 1.0f,  8.0f),
         glm::vec3(0.0f, 0.0f, -1.0f),
         glm::vec3(0.0f, 1.0f,  0.0f),
         Camera::BoundedData<float>{45.0f, 1.0f, 90.0f},
@@ -57,6 +58,7 @@ void processKeyboardInputs(GLFWwindow* window);
 void keyboardCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 void mouseCallback(GLFWwindow* window, double xpos, double ypos);
 void scrollCallback(GLFWwindow* window, double xoffset, double yoffset);
+void enableMSAA(bool enable);
 
 int main(int argc, char** argv) {
     std::cout << "main()\n";
@@ -66,6 +68,7 @@ int main(int argc, char** argv) {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_SAMPLES, 4); // MSAA
 
     GLFWwindow* window = glfwCreateWindow(SCREEN_WIDTH, SCREEN_HEIGTH, "LearnOpenGL", nullptr, nullptr);
     if (window == nullptr) {
@@ -80,6 +83,8 @@ int main(int argc, char** argv) {
         std::cout << "Failed to initialize GLAD" << std::endl;
         return -1;
     }
+
+    enableMSAA(enableMultisampling);
 
     glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGTH);
 
@@ -688,6 +693,9 @@ int main(int argc, char** argv) {
         if (enableCulling && ImGui::Checkbox("Front face cull", &cullFrontFace)) {
             glCullFace(cullFrontFace ? GL_FRONT : GL_BACK);
         }
+        if (ImGui::Checkbox("Enable Multi Sampling Anti-Aliasing", &enableMultisampling)) {
+            enableMSAA(enableMultisampling);
+        }
 
         ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
         ImGui::NewLine();
@@ -755,6 +763,8 @@ int main(int argc, char** argv) {
         const glm::mat4 view = camera.getViewMatrix();
         const glm::mat4 projection = glm::perspective(glm::radians(camera.getFieldOfView()), SCREEN_WIDTH/SCREEN_HEIGTH, 0.1f, 100.0f);
 
+        drawCubeWithTexCoords(glm::mat4{1.0f}, view, projection, textureWoodContainer->id);
+
         /*** Instancing ***/
         // using uniform offsets in vertex shader
         // instancingViaUniformOffsetShader.use();
@@ -764,20 +774,20 @@ int main(int argc, char** argv) {
         // glDrawArraysInstanced(GL_TRIANGLES, 0, 6, 100);
         // glBindVertexArray(0);
 
-        // draw planet
-        modelNoLightingShader.use();
-        glm::mat4 model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(0.0f, -3.0f, 0.0f));
-        model = glm::scale(model, glm::vec3(4.0f, 4.0f, 4.0f));
-        modelNoLightingShader.setMat4("model", model);
-        modelNoLightingShader.setMat4("view", view);
-        modelNoLightingShader.setMat4("projection", projection);
-        planetModel.draw(modelNoLightingShader);
-        // draw meteorites
-        modelInstancedShader.use();
-        modelInstancedShader.setMat4("view", view);
-        modelInstancedShader.setMat4("projection", projection);
-        rockModel.drawInstanced(modelInstancedShader);
+        // // draw planet
+        // modelNoLightingShader.use();
+        // glm::mat4 model = glm::mat4(1.0f);
+        // model = glm::translate(model, glm::vec3(0.0f, -3.0f, 0.0f));
+        // model = glm::scale(model, glm::vec3(4.0f, 4.0f, 4.0f));
+        // modelNoLightingShader.setMat4("model", model);
+        // modelNoLightingShader.setMat4("view", view);
+        // modelNoLightingShader.setMat4("projection", projection);
+        // planetModel.draw(modelNoLightingShader);
+        // // draw meteorites
+        // modelInstancedShader.use();
+        // modelInstancedShader.setMat4("view", view);
+        // modelInstancedShader.setMat4("projection", projection);
+        // rockModel.drawInstanced(modelInstancedShader);
 
         /*** Advanced Data & GLSL ***/
         // // set view projection UBO
@@ -1266,4 +1276,12 @@ void scrollCallback(GLFWwindow* window, double xoffset, double yoffset)
 {
     camera.processMouseScroll(yoffset);
     recalcClipSpace = true;
+}
+
+void enableMSAA(bool enable) {
+    if (enable) {
+        glEnable(GL_MULTISAMPLE);
+    } else {
+        glDisable(GL_MULTISAMPLE);
+    }
 }
