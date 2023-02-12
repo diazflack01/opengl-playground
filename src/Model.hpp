@@ -66,6 +66,8 @@ public:
     
     void updateSelfAndChild();
 
+    void updateSelfAndChildForced();
+
     // local transform
     void setPosition(glm::vec3 position);
     void setRotation(glm::vec3 rotation);
@@ -81,6 +83,7 @@ protected:
     std::vector<std::shared_ptr<SceneNode>> mChildren{};
     Transform mTransform{}; // local space
     glm::mat4 mModelMatrix{1.0f}; // world space, takes into account parent model matrix
+    bool mIsDirty{true};
 
     void calcModelMatrix();
 };

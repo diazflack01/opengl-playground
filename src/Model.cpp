@@ -184,24 +184,40 @@ void SceneNode::setParent(std::shared_ptr<SceneNode> parent) {
 }
 
 void SceneNode::updateSelfAndChild() {
-    calcModelMatrix();
+    if (mIsDirty) {
+        updateSelfAndChildForced();
+        return;
+    }
 
     for (auto& child : mChildren) {
         child->updateSelfAndChild();
     }
 }
 
+void SceneNode::updateSelfAndChildForced() {
+    calcModelMatrix();
+    mIsDirty = false;
+
+    for (auto& child : mChildren) {
+        child->updateSelfAndChildForced();
+    }
+}
+
 void SceneNode::setPosition(glm::vec3 position) {
     mTransform.position = position;
+    mIsDirty = true;
 }
 void SceneNode::setRotation(glm::vec3 rotation) {
     mTransform.rotation = rotation;
+    mIsDirty = true;
 }
 void SceneNode::setScale(glm::vec3 scale) {
     mTransform.scale = scale;
+    mIsDirty = true;
 }
 void SceneNode::setScale(float scale) {
     mTransform.scale = glm::vec3{scale, scale, scale};
+    mIsDirty = true;
 }
 
 glm::mat4 SceneNode::getModelMatrix() {
