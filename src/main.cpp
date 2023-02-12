@@ -1,4 +1,5 @@
 #include <iostream>
+#include <memory>
 #include <optional>
 #include <array>
 
@@ -39,7 +40,7 @@ float mousePosX = 0.0;
 float mousePosY = 0.0;
 
 Camera::ConfigState cameraConfig{
-        glm::vec3(-1.0f, 1.0f,  8.0f),
+        glm::vec3(-1.0f, 1.0f,  50.0f),
         glm::vec3(0.0f, 0.0f, -1.0f),
         glm::vec3(0.0f, 1.0f,  0.0f),
         Camera::BoundedData<float>{45.0f, 1.0f, 90.0f},
@@ -59,6 +60,8 @@ void keyboardCallback(GLFWwindow* window, int key, int scancode, int action, int
 void mouseCallback(GLFWwindow* window, double xpos, double ypos);
 void scrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 void enableMSAA(bool enable);
+
+void drawSceneNodes(std::shared_ptr<SceneNode> node, Shader& shader);
 
 int main(int argc, char** argv) {
     std::cout << "main()\n";
@@ -628,6 +631,18 @@ int main(int argc, char** argv) {
     // this call allocates GPU buffer, calling this multiple times
     rockModel.setInstancedModelMatrices(modelMatrices);
 
+    /*** Scene Graph ***/
+    auto planetMeshSGNode = std::make_shared<MeshSceneNode>(planetModel);
+    planetMeshSGNode->setPosition(glm::vec3{-5.f, 0.0f, 0.0f});
+    planetMeshSGNode->setScale(0.6f);
+    std::shared_ptr<SceneNode> node = planetMeshSGNode;
+    for (auto i = 0; i < 5; i++) {
+        node = node->addChild(std::make_shared<MeshSceneNode>(planetModel));
+        node->setPosition(glm::vec3{7.5f, 0.0f, 0.0f});
+        node->setScale(0.6f);
+    }
+    planetMeshSGNode->updateSelfAndChild();
+
     // z-buffer
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
@@ -763,7 +778,14 @@ int main(int argc, char** argv) {
         const glm::mat4 view = camera.getViewMatrix();
         const glm::mat4 projection = glm::perspective(glm::radians(camera.getFieldOfView()), SCREEN_WIDTH/SCREEN_HEIGTH, 0.1f, 100.0f);
 
-        drawCubeWithTexCoords(glm::mat4{1.0f}, view, projection, textureWoodContainer->id);
+        // drawCubeWithTexCoords(glm::mat4{1.0f}, view, projection, textureWoodContainer->id);
+
+        /*** Scene Graph ***/
+        modelNoLightingShader.use();
+        modelNoLightingShader.setMat4("view", view);
+        const auto projectionWithVeryFarFrustum = glm::perspective(glm::radians(camera.getFieldOfView()), SCREEN_WIDTH/SCREEN_HEIGTH, 0.1f, 500.0f);
+        modelNoLightingShader.setMat4("projection", projectionWithVeryFarFrustum);
+        drawSceneNodes(planetMeshSGNode, modelNoLightingShader);
 
         /*** Instancing ***/
         // using uniform offsets in vertex shader
@@ -1283,5 +1305,21 @@ void enableMSAA(bool enable) {
         glEnable(GL_MULTISAMPLE);
     } else {
         glDisable(GL_MULTISAMPLE);
+    }
+}
+
+void drawSceneNodes(std::shared_ptr<SceneNode> node, Shader& shader) {
+    if (node == nullptr) {
+        return;
+    }
+
+    if (auto drawableNode = std::dynamic_pointer_cast<IDrawable>(node)) {
+        drawableNode->draw(shader);
+    } else {
+        std::cout << "node is not drawable\n";
+    }
+
+    for (auto& child : node->getChildren()) {
+        drawSceneNodes(child, shader);
     }
 }

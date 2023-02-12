@@ -1,6 +1,9 @@
 #include "Model.hpp"
 
 #include <iostream>
+#include <memory>
+#include <utility>
+#include <glm/ext/matrix_transform.hpp> // glm::translate, glm::rotate, glm::scale
 
 #include "Utils.hpp"
 #include "ScopedTimer.hpp"
@@ -144,4 +147,86 @@ std::vector<Mesh::Texture> Model::loadMaterialTextures(aiMaterial *mat, aiTextur
     }
 
     return textures;
+}
+
+Transform::Transform(glm::vec3 positionIn, glm::vec3 rotationIn, glm::vec3 scaleIn)
+ : position{positionIn}, rotation{rotationIn}, scale{scaleIn}
+{}
+
+glm::mat4 Transform::getModelMatrix() const {
+    const glm::mat4 transformX = glm::rotate(glm::mat4(1.0f),
+                         glm::radians(rotation.x),
+                         glm::vec3(1.0f, 0.0f, 0.0f));
+    const glm::mat4 transformY = glm::rotate(glm::mat4(1.0f),
+                         glm::radians(rotation.y),
+                         glm::vec3(0.0f, 1.0f, 0.0f));
+    const glm::mat4 transformZ = glm::rotate(glm::mat4(1.0f),
+                         glm::radians(rotation.z),
+                         glm::vec3(0.0f, 0.0f, 1.0f));
+
+    // Y * X * Z
+    const glm::mat4 roationMatrix = transformY * transformX * transformZ;
+
+    // translation * rotation * scale (also know as TRS matrix)
+    return glm::translate(glm::mat4(1.0f), position) *
+                roationMatrix *
+                glm::scale(glm::mat4(1.0f), scale);
+}
+
+std::shared_ptr<SceneNode> SceneNode::addChild(std::shared_ptr<SceneNode> node) {
+    mChildren.push_back(node);
+    node->mParent = shared_from_this();
+    return node;
+}
+
+void SceneNode::setParent(std::shared_ptr<SceneNode> parent) {
+    mParent = std::move(parent);
+}
+
+void SceneNode::updateSelfAndChild() {
+    calcModelMatrix();
+
+    for (auto& child : mChildren) {
+        child->updateSelfAndChild();
+    }
+}
+
+void SceneNode::setPosition(glm::vec3 position) {
+    mTransform.position = position;
+}
+void SceneNode::setRotation(glm::vec3 rotation) {
+    mTransform.rotation = rotation;
+}
+void SceneNode::setScale(glm::vec3 scale) {
+    mTransform.scale = scale;
+}
+void SceneNode::setScale(float scale) {
+    mTransform.scale = glm::vec3{scale, scale, scale};
+}
+
+glm::mat4 SceneNode::getModelMatrix() {
+    return mModelMatrix;
+}
+
+std::vector<std::shared_ptr<SceneNode>> SceneNode::getChildren() const {
+    return mChildren;
+}
+
+void SceneNode::calcModelMatrix() {
+    if (mParent) {
+        mModelMatrix = mParent->mModelMatrix * mTransform.getModelMatrix();
+    } else {
+        mModelMatrix = mTransform.getModelMatrix();
+    }
+}
+
+MeshSceneNode::MeshSceneNode(Model model)
+ : mModel{model}
+{}
+
+void MeshSceneNode::draw(Shader &shader) {
+    shader.use();
+
+    shader.setMat4("model", getModelMatrix());
+    mModel.draw(shader);
 }
