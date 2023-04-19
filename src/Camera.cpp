@@ -1,5 +1,6 @@
 #include "Camera.hpp"
 #include "glm/ext/matrix_transform.hpp"
+#include <iostream>
 
 template<typename T>
 T clamp(const Camera::BoundedData<T>& data) {
@@ -43,6 +44,7 @@ void Camera::processMovement(Camera::Movement movement, float deltaTime) {
 }
 
 void Camera::processMouseMovement(float xPos, float yPos) {
+    std::cout << "Camera::processMouseMovement xPos:" << xPos << " yPos:" << yPos << std::endl;
     glm::vec2 XYOffset = [&]{
         if (mFirstMouseMovement) {
             mFirstMouseMovement = false;
@@ -64,6 +66,9 @@ void Camera::processMouseMovement(float xPos, float yPos) {
 
     mConfigState.yaw.val = clamp(mConfigState.yaw);
     mConfigState.pitch.val = mConfigState.clampPitch ? clamp(mConfigState.pitch) : mConfigState.pitch.val;
+
+    std::cout << "pitch:" << mConfigState.pitch.val << " yaw:" << mConfigState.yaw.val
+        << " xOffset:" << XYOffset.x << " yOffset:" << XYOffset.y << std::endl;
 
     glm::vec3 direction;
     direction.x = cos(glm::radians(mConfigState.yaw.val)) * cos(glm::radians(mConfigState.pitch.val));

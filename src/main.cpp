@@ -19,13 +19,13 @@
 #include "Model.hpp"
 
 #include "TestingData.hpp"
-#include "glm/gtc/type_ptr.hpp"
 
 float deltaTime = 0.0f;	// Time between current frame and last frame
 float lastFrame = 0.0f; // Time of last frame
 
 const float SCREEN_WIDTH = 800.0f * 1.5;
 const float SCREEN_HEIGTH = 600.0f * 1.5;
+const auto WINDOW_TITLE = "LearnOpenGL";
 
 bool showAxisArrows = true;
 bool disableCursor = false;
@@ -73,7 +73,7 @@ int main(int argc, char** argv) {
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_SAMPLES, 4); // MSAA
 
-    GLFWwindow* window = glfwCreateWindow(SCREEN_WIDTH, SCREEN_HEIGTH, "LearnOpenGL", nullptr, nullptr);
+    GLFWwindow* window = glfwCreateWindow(SCREEN_WIDTH, SCREEN_HEIGTH, WINDOW_TITLE, nullptr, nullptr);
     if (window == nullptr) {
         std::cout << "Failed to create GLFW window\n";
         glfwTerminate();
@@ -92,6 +92,7 @@ int main(int argc, char** argv) {
     glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGTH);
 
     glfwSetInputMode(window, GLFW_CURSOR, disableCursor ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
+
     glPolygonMode(GL_FRONT_AND_BACK, drawWireFrame ? GL_LINE : GL_FILL);
 
     // event callbacks
@@ -132,7 +133,6 @@ int main(int argc, char** argv) {
     Shader modelNoLightingShader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/model_loading.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/model_loading.frag"};
     Shader modelInstancedShader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/instancing/model_loading.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/instancing/model_loading.frag"};
     // Model model{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/models/backpack/backpack.obj"};
-    Shader depthTestingShader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/depth_testing.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/depth_testing.frag"};
     Shader stencilTestingShader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/stencil_testing.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/stencil_testing.frag"};
     Shader stencilTestingSingleColorShader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/stencil_testing.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/stencil_testing.frag"};
 
@@ -284,6 +284,7 @@ int main(int argc, char** argv) {
         return 1;
     }
 
+    Shader depthTestingShader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/depth_testing.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/depth_testing.frag"};
     depthTestingShader.use();
     depthTestingShader.setInt("texture0", 0);
 
@@ -593,20 +594,20 @@ int main(int argc, char** argv) {
     glVertexAttribDivisor(2, 1); // update attribute 2 every 1 instance
     Shader instancingViaAttributeOffsetShader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/instancing/instancing_via_attrib_offset.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/instancing/instancing_common.frag"};
 
-    Model planetModel{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/models/planet/planet.obj"};
-    Model rockModel{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/models/rock/rock.obj"};
+    // Model planetModel{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/models/planet/planet.obj"};
+    // Model rockModel{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/models/rock/rock.obj"};
 
-    unsigned int amount = 900000;
+    unsigned int instanceAmount = 900000;
     std::vector<glm::mat4> modelMatrices;
-    modelMatrices.reserve(amount);
+    modelMatrices.reserve(instanceAmount);
     srand(glfwGetTime()); // initialize random seed	
     float radius = 50.0;
     float offset_ = 2.5f;
-    for(unsigned int i = 0; i < amount; i++)
+    for(unsigned int i = 0; i < instanceAmount; i++)
     {
         glm::mat4 model = glm::mat4(1.0f);
         // 1. translation: displace along circle with 'radius' in range [-offset_, offset_]
-        float angle = (float)i / (float)amount * 360.0f;
+        float angle = (float)i / (float)instanceAmount * 360.0f;
         float displacement = (rand() % (int)(2 * offset_ * 100)) / 100.0f - offset_;
         float x = sin(angle) * radius + displacement;
         displacement = (rand() % (int)(2 * offset_ * 100)) / 100.0f - offset_;
@@ -629,19 +630,19 @@ int main(int argc, char** argv) {
     }
 
     // this call allocates GPU buffer, calling this multiple times
-    rockModel.setInstancedModelMatrices(modelMatrices);
+    // rockModel.setInstancedModelMatrices(modelMatrices);
 
-    /*** Scene Graph ***/
-    auto planetMeshSGNode = std::make_shared<MeshSceneNode>(planetModel);
-    planetMeshSGNode->setPosition(glm::vec3{-5.f, 0.0f, 0.0f});
-    planetMeshSGNode->setScale(0.6f);
-    std::shared_ptr<SceneNode> node = planetMeshSGNode;
-    for (auto i = 0; i < 5; i++) {
-        node = node->addChild(std::make_shared<MeshSceneNode>(planetModel));
-        node->setPosition(glm::vec3{7.5f, 0.0f, 0.0f});
-        node->setScale(0.6f);
-    }
-    planetMeshSGNode->updateSelfAndChild();
+//    /*** Scene Graph ***/
+//    auto planetMeshSGNode = std::make_shared<MeshSceneNode>(planetModel);
+//    planetMeshSGNode->setPosition(glm::vec3{-5.f, 0.0f, 0.0f});
+//    planetMeshSGNode->setScale(0.6f);
+//    std::shared_ptr<SceneNode> node = planetMeshSGNode;
+//    for (auto i = 0; i < 5; i++) {
+//        node = node->addChild(std::make_shared<MeshSceneNode>(planetModel));
+//        node->setPosition(glm::vec3{7.5f, 0.0f, 0.0f});
+//        node->setScale(0.6f);
+//    }
+//    planetMeshSGNode->updateSelfAndChild();
 
     // z-buffer
     glEnable(GL_DEPTH_TEST);
@@ -666,6 +667,11 @@ int main(int argc, char** argv) {
     float x = 0.0, y = 0.0, z = 0.0;
     glm::vec4 clipSpace{0.0};
 
+    /*********************/
+    /*********************/
+    /**** Render Loop ****/
+    /*********************/
+    /*********************/
     while (!glfwWindowShouldClose(window)) {
         const float currentFrame = glfwGetTime();
         deltaTime = currentFrame - lastFrame;
@@ -778,14 +784,14 @@ int main(int argc, char** argv) {
         const glm::mat4 view = camera.getViewMatrix();
         const glm::mat4 projection = glm::perspective(glm::radians(camera.getFieldOfView()), SCREEN_WIDTH/SCREEN_HEIGTH, 0.1f, 100.0f);
 
-        // drawCubeWithTexCoords(glm::mat4{1.0f}, view, projection, textureWoodContainer->id);
+         drawCubeWithTexCoords(glm::mat4{1.0f}, view, projection, textureWoodContainer->id);
 
         /*** Scene Graph ***/
-        modelNoLightingShader.use();
-        modelNoLightingShader.setMat4("view", view);
-        const auto projectionWithVeryFarFrustum = glm::perspective(glm::radians(camera.getFieldOfView()), SCREEN_WIDTH/SCREEN_HEIGTH, 0.1f, 500.0f);
-        modelNoLightingShader.setMat4("projection", projectionWithVeryFarFrustum);
-        drawSceneNodes(planetMeshSGNode, modelNoLightingShader);
+        // modelNoLightingShader.use();
+        // modelNoLightingShader.setMat4("view", view);
+        // const auto projectionWithVeryFarFrustum = glm::perspective(glm::radians(camera.getFieldOfView()), SCREEN_WIDTH/SCREEN_HEIGTH, 0.1f, 500.0f);
+        // modelNoLightingShader.setMat4("projection", projectionWithVeryFarFrustum);
+        // drawSceneNodes(planetMeshSGNode, modelNoLightingShader);
 
         /*** Instancing ***/
         // using uniform offsets in vertex shader
@@ -1286,6 +1292,7 @@ void keyboardCallback(GLFWwindow* window, int key, int scancode, int action, int
 }
 
 void mouseCallback(GLFWwindow* window, double xpos, double ypos) {
+    std::cout << "mouseCallback xpos:" << xpos << " ypos:" << ypos << std::endl;
     if (enableCameraMouseCallbackMovement) {
         camera.processMouseMovement(xpos, ypos);
     }
@@ -1296,6 +1303,7 @@ void mouseCallback(GLFWwindow* window, double xpos, double ypos) {
 
 void scrollCallback(GLFWwindow* window, double xoffset, double yoffset)
 {
+    std::cout << "scrollCallback xpos:" << xoffset << " ypos:" << yoffset << std::endl;
     camera.processMouseScroll(yoffset);
     recalcClipSpace = true;
 }
