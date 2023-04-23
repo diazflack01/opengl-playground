@@ -13,6 +13,8 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 
+#include <fmt/core.h>
+
 #include "Shader.hpp"
 #include "Camera.hpp"
 #include "Utils.hpp"
@@ -67,7 +69,7 @@ void enableMSAA(bool enable);
 void drawSceneNodes(std::shared_ptr<SceneNode> node, Shader& shader);
 
 int main(int argc, char** argv) {
-    std::cout << "main()\n";
+    fmt::println("main ()");
 
     glfwInit();
     // same as generated glad library

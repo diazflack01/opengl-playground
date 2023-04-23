@@ -10,5 +10,6 @@ add_subdirectory(external/stb)
 add_subdirectory(external/glm)
 add_subdirectory(external/assimp)
 add_subdirectory(external/imgui-glfw)
+add_subdirectory(external/fmt)
 
 add_subdirectory(src)
