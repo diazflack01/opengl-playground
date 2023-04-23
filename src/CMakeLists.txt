@@ -12,7 +12,13 @@ add_executable(${PROJECT_NAME}
         Utils.hpp
         ScopedTimer.cpp
         ScopedTimer.hpp
-        TestingData.hpp)
+        TestingData.hpp
+        Bone.cpp
+        Bone.hpp
+        Animation.cpp
+        Animation.hpp
+        Animator.cpp
+        Animator.hpp)
 
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
 target_link_libraries(${PROJECT_NAME} PRIVATE glfw glad stb glm assimp imgui)

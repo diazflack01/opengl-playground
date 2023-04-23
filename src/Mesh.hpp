@@ -7,12 +7,19 @@
 #include "Shader.hpp"
 #include "glm/fwd.hpp"
 
+constexpr int MAX_BONE_INFLUENCE = 4;
+
 class Mesh {
 public:
     struct Vertex {
         glm::vec3 Position;
         glm::vec3 Normal;
         glm::vec2 TexCoords;
+
+        // bone idx that will influence this vertex
+        int boneIds[MAX_BONE_INFLUENCE];
+        // weights from each bone
+        float boneWeights[MAX_BONE_INFLUENCE];
     };
 
     struct Texture {

@@ -18,6 +18,9 @@
 #include "Utils.hpp"
 #include "Model.hpp"
 
+#include "Animation.hpp"
+#include "Animator.hpp"
+
 #include "TestingData.hpp"
 
 float deltaTime = 0.0f;	// Time between current frame and last frame
@@ -135,6 +138,13 @@ int main(int argc, char** argv) {
     // Model model{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/models/backpack/backpack.obj"};
     Shader stencilTestingShader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/stencil_testing.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/stencil_testing.frag"};
     Shader stencilTestingSingleColorShader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/stencil_testing.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/stencil_testing.frag"};
+
+    /*** Animation ***/
+    Model vampireModel{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/models/vampire/dancing_vampire.dae"};
+    Animation danceAnimation{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/models/vampire/dancing_vampire.dae", vampireModel};
+    Animator animator(&danceAnimation);
+    Shader animationShader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/skeletal_animation/skeletal_animation.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/model_loading.frag"};
+    animationShader.use();
 
     unsigned cubeWithTexCoordsVAO;
     glGenVertexArrays(1, &cubeWithTexCoordsVAO);
@@ -784,7 +794,24 @@ int main(int argc, char** argv) {
         const glm::mat4 view = camera.getViewMatrix();
         const glm::mat4 projection = glm::perspective(glm::radians(camera.getFieldOfView()), SCREEN_WIDTH/SCREEN_HEIGTH, 0.1f, 100.0f);
 
-         drawCubeWithTexCoords(glm::mat4{1.0f}, view, projection, textureWoodContainer->id);
+//        drawCubeWithTexCoords(glm::mat4{1.0f}, view, projection, textureWoodContainer->id);
+
+        /*** Animation ***/
+        animator.updateAnimation(deltaTime);
+        animationShader.use();
+        animationShader.setMat4("projection", projection);
+        animationShader.setMat4("view", view);
+
+        const auto transforms = animator.getFinalBoneMatrices();
+        for (auto i = 0; i < transforms.size(); i++) {
+            animationShader.setMat4("finalBonesMatrices[" + std::to_string(i) + "]", transforms[i]);
+        }
+
+        glm::mat4 model = glm::mat4{1.0f};
+        model = glm::translate(model, glm::vec3{0.0f, -0.4f, 0.0f});
+        model = glm::scale(model, glm::vec3{1.0f, 1.0f, 1.0f});
+        animationShader.setMat4("model", model);
+        vampireModel.draw(animationShader);
 
         /*** Scene Graph ***/
         // modelNoLightingShader.use();
