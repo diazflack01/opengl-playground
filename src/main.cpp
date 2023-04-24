@@ -15,13 +15,13 @@
 
 #include <fmt/core.h>
 
-#include "Shader.hpp"
-#include "Camera.hpp"
-#include "Utils.hpp"
-#include "Model.hpp"
+#include <graphics/Shader.hpp>
+#include <graphics/Camera.hpp>
+#include <graphics/Model.hpp>
+#include <graphics/Animation.hpp>
+#include <graphics/Animator.hpp>
 
-#include "Animation.hpp"
-#include "Animator.hpp"
+#include <utils/Utils.hpp>
 
 #include "TestingData.hpp"
 

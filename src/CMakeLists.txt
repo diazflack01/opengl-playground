@@ -1,24 +1,16 @@
-add_executable(${PROJECT_NAME}
-        main.cpp
-        Shader.cpp
-        Shader.hpp
-        Camera.cpp
-        Camera.hpp
-        Mesh.cpp
-        Mesh.hpp
-        Model.cpp
-        Model.hpp
-        Utils.cpp
-        Utils.hpp
-        ScopedTimer.cpp
-        ScopedTimer.hpp
-        TestingData.hpp
-        Bone.cpp
-        Bone.hpp
-        Animation.cpp
-        Animation.hpp
-        Animator.cpp
-        Animator.hpp)
+# TODO: Clean this target
+add_library(testing-data
+        TestingData.cpp
+        TestingData.hpp)
+target_compile_features(testing-data PRIVATE cxx_std_17)
+target_link_libraries(testing-data glm)
 
+# dependencies
+add_subdirectory(utils)
+add_subdirectory(graphics)
+
+# main executable
+add_executable(${PROJECT_NAME}
+        main.cpp)
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
-target_link_libraries(${PROJECT_NAME} PRIVATE glfw glad stb glm assimp imgui fmt)
+target_link_libraries(${PROJECT_NAME} PRIVATE glfw glad stb glm assimp imgui fmt graphics utils testing-data)

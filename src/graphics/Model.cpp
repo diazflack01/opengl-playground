@@ -5,8 +5,8 @@
 #include <utility>
 #include <glm/ext/matrix_transform.hpp> // glm::translate, glm::rotate, glm::scale
 
-#include "Utils.hpp"
-#include "ScopedTimer.hpp"
+#include <utils/Utils.hpp>
+#include <utils/ScopedTimer.hpp>
 
 Model::Model(const char *path) {
     loadModel(path);

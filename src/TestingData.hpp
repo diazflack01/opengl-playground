@@ -1,5 +1,8 @@
 #pragma once
 
+#include <array>
+#include <glm/vec3.hpp>
+
 namespace testing_data {
 
 const float vertices[] = {
