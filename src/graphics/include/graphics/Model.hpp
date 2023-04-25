@@ -2,9 +2,6 @@
 
 #include <vector>
 
-#include <assimp/Importer.hpp>
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
 #include <memory>
 #include <unordered_map>
 #include <vector>
@@ -24,6 +21,10 @@ public:
 
     explicit Model(const char* path);
 
+    // these two are needed for Pimpl pattern to work with unique_ptr
+    Model(Model&& other) noexcept;
+    ~Model(); // usage of `= default` does not compile here for some reason
+
     void draw(Shader &shader);
 
     void setInstancedModelMatrices(const std::vector<glm::mat4>& modelMatrices);
@@ -35,22 +36,8 @@ public:
     int & getBoneCount();
 
 private:
-    // model data
-    std::vector<Mesh> mMeshes;
-    std::string mDirectory;
-    std::vector<Mesh::Texture> mLoadedTextures;
-    std::unordered_map<std::string, BoneInfo> m_boneInfoMap;
-    int m_boneCounter{0};
-
-    void loadModel(std::string path);
-    void processNode(aiNode *node, const aiScene *scene);
-    Mesh processMesh(aiMesh *mesh, const aiScene *scene);
-    std::vector<Mesh::Texture> loadMaterialTextures(aiMaterial *mat, aiTextureType type,
-                                         std::string typeName);
-
-    void setVertexBoneDataToDefault(Mesh::Vertex& vertex);
-    void setVertexBoneData(Mesh::Vertex& vertex, int boneId, float weight);
-    void extractBoneWeightForVertices(std::vector<Mesh::Vertex> &vertices, aiMesh *mesh);
+    struct Impl;
+    std::unique_ptr<Impl> m_impl;
 };
 
 struct Transform {

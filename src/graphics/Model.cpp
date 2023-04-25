@@ -5,21 +5,45 @@
 #include <utility>
 #include <glm/ext/matrix_transform.hpp> // glm::translate, glm::rotate, glm::scale
 
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
+
 #include <utils/Utils.hpp>
 #include <utils/ScopedTimer.hpp>
 
-Model::Model(const char *path) {
-    loadModel(path);
+
+struct Model::Impl {
+    // model data
+    std::vector<Mesh> mMeshes;
+    std::string mDirectory;
+    std::vector<Mesh::Texture> mLoadedTextures;
+    std::unordered_map<std::string, BoneInfo> m_boneInfoMap;
+    int m_boneCounter{0};
+
+    void loadModel(std::string path);
+    void processNode(aiNode *node, const aiScene *scene);
+    Mesh processMesh(aiMesh *mesh, const aiScene *scene);
+    std::vector<Mesh::Texture> loadMaterialTextures(aiMaterial *mat, aiTextureType type,
+                                                    std::string typeName);
+
+    void setVertexBoneDataToDefault(Mesh::Vertex& vertex);
+    void setVertexBoneData(Mesh::Vertex& vertex, int boneId, float weight);
+    void extractBoneWeightForVertices(std::vector<Mesh::Vertex> &vertices, aiMesh *mesh);
+};
+
+Model::Model(const char *path) : m_impl{std::make_unique<Impl>()} {
+    m_impl->loadModel(path);
 }
 
 void Model::draw(Shader &shader) {
-    for (auto idx = 0; idx < mMeshes.size(); idx++) {
-        mMeshes[idx].draw(shader);
+    for (auto idx = 0; idx < m_impl->mMeshes.size(); idx++) {
+        m_impl->mMeshes[idx].draw(shader);
     }
 }
 
 void Model::drawInstanced(Shader &shader) {
-    for (auto& mesh : mMeshes) {
+    for (auto& mesh : m_impl->mMeshes) {
         mesh.drawInstanced(shader);
     }
 }
@@ -30,14 +54,14 @@ void Model::setInstancedModelMatrices(const std::vector<glm::mat4>& modelMatrice
     glBindBuffer(GL_ARRAY_BUFFER, buffer);
     glBufferData(GL_ARRAY_BUFFER, modelMatrices.size() * sizeof(glm::mat4), modelMatrices.data(), GL_STATIC_DRAW);
 
-    for (auto& mesh : mMeshes) {
+    for (auto& mesh : m_impl->mMeshes) {
         mesh.setInstancedModelMatrices(modelMatrices);
     }
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
-void Model::loadModel(std::string path) {
+void Model::Impl::loadModel(std::string path) {
     ScopedTimer timer{std::string{"loadModel - "} + path};
     Assimp::Importer import;
     const aiScene *scene = import.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_GenNormals);
@@ -54,7 +78,7 @@ void Model::loadModel(std::string path) {
     processNode(scene->mRootNode, scene);
 }
 
-void Model::processNode(aiNode *node, const aiScene *scene) {
+void Model::Impl::processNode(aiNode *node, const aiScene *scene) {
     // process all the node's meshes (if any)
     for(unsigned int i = 0; i < node->mNumMeshes; i++)
     {
@@ -70,7 +94,7 @@ void Model::processNode(aiNode *node, const aiScene *scene) {
     }
 }
 
-Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene) {
+Mesh Model::Impl::processMesh(aiMesh *mesh, const aiScene *scene) {
     std::vector<Mesh::Vertex> vertices;
     std::vector<unsigned int> indices;
     std::vector<Mesh::Texture> textures;
@@ -118,7 +142,7 @@ Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene) {
     return Mesh{vertices, indices, textures};
 }
 
-std::vector<Mesh::Texture> Model::loadMaterialTextures(aiMaterial *mat, aiTextureType type, std::string typeName) {
+std::vector<Mesh::Texture> Model::Impl::loadMaterialTextures(aiMaterial *mat, aiTextureType type, std::string typeName) {
     std::vector<Mesh::Texture> textures;
 
     for(unsigned int i = 0; i < mat->GetTextureCount(type); i++)
@@ -150,14 +174,14 @@ std::vector<Mesh::Texture> Model::loadMaterialTextures(aiMaterial *mat, aiTextur
     return textures;
 }
 
-void Model::setVertexBoneDataToDefault(Mesh::Vertex& vertex) {
+void Model::Impl::setVertexBoneDataToDefault(Mesh::Vertex& vertex) {
     for (auto i = 0; i < MAX_BONE_INFLUENCE; i++) {
         vertex.boneIds[i] = -1;
         vertex.boneWeights[i] = 0.0f;
     }
 }
 
-void Model::setVertexBoneData(Mesh::Vertex& vertex, int boneId, float weight) {
+void Model::Impl::setVertexBoneData(Mesh::Vertex& vertex, int boneId, float weight) {
     for (int i = 0; i < MAX_BONE_INFLUENCE; ++i) {
         if (vertex.boneIds[i] < 0) {
             vertex.boneWeights[i] = weight;
@@ -167,7 +191,7 @@ void Model::setVertexBoneData(Mesh::Vertex& vertex, int boneId, float weight) {
     }
 }
 
-void Model::extractBoneWeightForVertices(std::vector<Mesh::Vertex> &vertices, aiMesh *mesh) {
+void Model::Impl::extractBoneWeightForVertices(std::vector<Mesh::Vertex> &vertices, aiMesh *mesh) {
     // find which vertices each bone affects
     for (int boneIdx = 0; boneIdx < mesh->mNumBones; ++boneIdx) {
         // find boneId of given boneName
@@ -210,12 +234,18 @@ void Model::extractBoneWeightForVertices(std::vector<Mesh::Vertex> &vertices, ai
 }
 
 std::unordered_map<std::string, Model::BoneInfo> &Model::getBoneInfoMap() {
-    return m_boneInfoMap;
+    return m_impl->m_boneInfoMap;
 }
 
 int & Model::getBoneCount() {
-    return m_boneCounter;
+    return m_impl->m_boneCounter;
 }
+
+Model::Model(Model &&other) noexcept {
+    m_impl = std::move(other.m_impl);
+}
+
+Model::~Model() {}
 
 
 Transform::Transform(glm::vec3 positionIn, glm::vec3 rotationIn, glm::vec3 scaleIn)
@@ -306,7 +336,7 @@ void SceneNode::calcModelMatrix() {
 }
 
 MeshSceneNode::MeshSceneNode(Model model)
- : mModel{model}
+ : mModel{std::move(model)}
 {}
 
 void MeshSceneNode::draw(Shader &shader) {

@@ -1,5 +1,8 @@
 #include "Animation.hpp"
 
+#include <assimp/Importer.hpp>
+#include <assimp/postprocess.h>
+
 Animation::Animation(const std::string &animationFilePath, Model &model) {
     Assimp::Importer importer;
     const aiScene* scene = importer.ReadFile(animationFilePath, aiProcess_Triangulate);
