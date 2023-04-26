@@ -73,8 +73,10 @@ int main(int argc, char** argv) {
     glfwSetScrollCallback(window, scrollCallback);
 
     Shader modelNoLightingShader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/model_loading.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/model_loading.frag"};
-    Model model{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/models/backpack/backpack.obj"};
+    Model backPackModel{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/models/backpack/backpack.obj"};
 //    Model vampireModel{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/models/vampire/dancing_vampire.dae"};
+
+    glEnable(GL_DEPTH_TEST);
 
     while (!glfwWindowShouldClose(window)) {
         const float currentFrame = glfwGetTime();
@@ -86,7 +88,7 @@ int main(int argc, char** argv) {
         processKeyboardInputs(window);
 
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // Current cycle camera view and projection
         const glm::mat4 view = camera.getViewMatrix();
@@ -98,7 +100,7 @@ int main(int argc, char** argv) {
 //        modelNoLightingShader.setMat4("model", glm::translate(glm::scale(glm::mat4{1.0f}, glm::vec3{0.05f, 0.05f, 0.05f}), glm::vec3{0.0f, -20.f,0.0f}));
         modelNoLightingShader.setMat4("model", glm::mat4{1.0f});
 //        vampireModel.draw(modelNoLightingShader);
-        model.draw(modelNoLightingShader);
+        backPackModel.draw(modelNoLightingShader);
 
         glfwSwapBuffers(window);
     }

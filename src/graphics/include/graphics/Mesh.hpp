@@ -12,9 +12,9 @@ constexpr int MAX_BONE_INFLUENCE = 4;
 class Mesh {
 public:
     struct Vertex {
-        glm::vec3 Position;
-        glm::vec3 Normal;
-        glm::vec2 TexCoords;
+        glm::vec3 position;
+        glm::vec3 normal;
+        glm::vec2 texCoords;
 
         // bone idx that will influence this vertex
         int boneIds[MAX_BONE_INFLUENCE];
@@ -37,15 +37,15 @@ public:
     void drawInstanced(Shader& shader);
 
 private:
-    std::vector<Vertex> mVertices;
-    std::vector<unsigned int> mIndices;
-    std::vector<Texture> mTextures;
+    std::vector<Vertex> m_vertices;
+    std::vector<unsigned int> m_indices;
+    std::vector<Texture> m_textures;
 
-    unsigned int mVAO;
-    unsigned int mVBO;
-    unsigned int mEBO;
+    unsigned int m_VAO;
+    unsigned int m_VBO;
+    unsigned int m_EBO;
 
-    std::optional<int> mInstanceCount;
+    std::optional<int> m_instanceCount;
 
     void setupMesh();
     void bindTextures(Shader& shader);

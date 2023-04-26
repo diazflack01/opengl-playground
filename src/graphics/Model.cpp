@@ -15,9 +15,9 @@
 
 struct Model::Impl {
     // model data
-    std::vector<Mesh> mMeshes;
-    std::string mDirectory;
-    std::vector<Mesh::Texture> mLoadedTextures;
+    std::vector<Mesh> m_meshes;
+    std::string m_directory;
+    std::vector<Mesh::Texture> m_loadedTextures;
     std::unordered_map<std::string, BoneInfo> m_boneInfoMap;
     int m_boneCounter{0};
 
@@ -37,13 +37,13 @@ Model::Model(const char *path) : m_impl{std::make_unique<Impl>()} {
 }
 
 void Model::draw(Shader &shader) {
-    for (auto idx = 0; idx < m_impl->mMeshes.size(); idx++) {
-        m_impl->mMeshes[idx].draw(shader);
+    for (auto idx = 0; idx < m_impl->m_meshes.size(); idx++) {
+        m_impl->m_meshes[idx].draw(shader);
     }
 }
 
 void Model::drawInstanced(Shader &shader) {
-    for (auto& mesh : m_impl->mMeshes) {
+    for (auto& mesh : m_impl->m_meshes) {
         mesh.drawInstanced(shader);
     }
 }
@@ -54,7 +54,7 @@ void Model::setInstancedModelMatrices(const std::vector<glm::mat4>& modelMatrice
     glBindBuffer(GL_ARRAY_BUFFER, buffer);
     glBufferData(GL_ARRAY_BUFFER, modelMatrices.size() * sizeof(glm::mat4), modelMatrices.data(), GL_STATIC_DRAW);
 
-    for (auto& mesh : m_impl->mMeshes) {
+    for (auto& mesh : m_impl->m_meshes) {
         mesh.setInstancedModelMatrices(modelMatrices);
     }
 
@@ -71,7 +71,7 @@ void Model::Impl::loadModel(std::string path) {
         std::cout << "ERROR::ASSIMP::" << import.GetErrorString() << std::endl;
         return;
     }
-    mDirectory = path.substr(0, path.find_last_of('/'));
+    m_directory = path.substr(0, path.find_last_of('/'));
 
     std::cout << "Root node meshes: " << scene->mRootNode->mNumMeshes << " children: " << scene->mRootNode->mNumChildren << std::endl;
 
@@ -84,7 +84,7 @@ void Model::Impl::processNode(aiNode *node, const aiScene *scene) {
     {
         aiMesh *mesh = scene->mMeshes[node->mMeshes[i]];
         std::cout << "processing mesh: " << i << " numVertices: " << mesh->mNumVertices << "\n";
-        mMeshes.push_back(processMesh(mesh, scene));
+        m_meshes.push_back(processMesh(mesh, scene));
     }
     // then do the same for each of its children
     for(unsigned int i = 0; i < node->mNumChildren; i++)
@@ -101,17 +101,17 @@ Mesh Model::Impl::processMesh(aiMesh *mesh, const aiScene *scene) {
 
     for(unsigned int i = 0; i < mesh->mNumVertices; i++)
     {
-        Mesh::Vertex vertex;
+        Mesh::Vertex vertex{};
 
         setVertexBoneDataToDefault(vertex);
 
         // process vertex positions, normals and texture coordinates
-        vertex.Position = glm::vec3{mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z};
-        vertex.Normal = glm::vec3{mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z};
+        vertex.position = glm::vec3{mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z};
+        vertex.normal = glm::vec3{mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z};
         if (mesh->mTextureCoords[0] != nullptr) {
-            vertex.TexCoords = glm::vec2{mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y};
+            vertex.texCoords = glm::vec2{mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y};
         } else {
-            vertex.TexCoords = glm::vec2{0.0f, 0.0f};
+            vertex.texCoords = glm::vec2{0.0f, 0.0f};
         }
 
         vertices.push_back(vertex);
@@ -150,7 +150,7 @@ std::vector<Mesh::Texture> Model::Impl::loadMaterialTextures(aiMaterial *mat, ai
         aiString str;
         mat->GetTexture(type, i, &str);
 
-        const auto textureFullPathToLoad{mDirectory + "/" + str.C_Str()};
+        const auto textureFullPathToLoad{m_directory + "/" + str.C_Str()};
         const auto loadedTexture = tryLoadTexture(textureFullPathToLoad);
         if (!loadedTexture.has_value()) {
             std::cerr << "Failed to load texture " << textureFullPathToLoad << "\n";
@@ -158,8 +158,8 @@ std::vector<Mesh::Texture> Model::Impl::loadMaterialTextures(aiMaterial *mat, ai
         }
 
         // find if existing in cache
-        const auto cachedTexture = std::find_if(mLoadedTextures.begin(), mLoadedTextures.end(), [&](const auto& t){ return t.path == std::string(str.C_Str()); });
-        if (cachedTexture != mLoadedTextures.end()) {
+        const auto cachedTexture = std::find_if(m_loadedTextures.begin(), m_loadedTextures.end(), [&](const auto& t){ return t.path == std::string(str.C_Str()); });
+        if (cachedTexture != m_loadedTextures.end()) {
             std::cout << "skip texture loading, already exist in cache id:" << cachedTexture->id << " type:" << cachedTexture->type << " path:" << cachedTexture->path << "\n";
             textures.emplace_back(*cachedTexture);
             continue;
@@ -167,8 +167,8 @@ std::vector<Mesh::Texture> Model::Impl::loadMaterialTextures(aiMaterial *mat, ai
 
         Mesh::Texture texture{loadedTexture->id, typeName, str.C_Str()};
         std::cout << "adding texture id:" << texture.id << " type:" << texture.type << " path:" << texture.path << "\n";
-        mLoadedTextures.emplace_back(texture);
-        textures.emplace_back(mLoadedTextures.back());
+        m_loadedTextures.emplace_back(texture);
+        textures.emplace_back(m_loadedTextures.back());
     }
 
     return textures;
