@@ -115,6 +115,9 @@ int main(int argc, char** argv) {
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
 
+    // draw wireframe. Default is GL_FILL
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
     while (!windowManager.isCloseRequested()) {
         windowManager.update();
 
