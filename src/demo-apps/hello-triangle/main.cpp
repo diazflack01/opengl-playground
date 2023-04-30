@@ -1,45 +1,19 @@
 #include <iostream>
 #include <vector>
 
-#include <glad/glad.h> // needs to be included before glfw
-#include <GLFW/glfw3.h>
-
 #include <fmt/core.h>
+
+#include <graphics/WindowManager.hpp>
 
 const float SCREEN_WIDTH = 800.0f * 1.5;
 const float SCREEN_HEIGTH = 600.0f * 1.5;
 const auto WINDOW_TITLE = "hello-triangle";
 
-void framebufferSizeCallback(GLFWwindow* window, int width, int height);
-void processKeyboardInputs(GLFWwindow* window);
 
 int main(int argc, char** argv) {
     fmt::println("main ()");
 
-    glfwInit();
-    // same as generated glad library
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
-    GLFWwindow* window = glfwCreateWindow(SCREEN_WIDTH, SCREEN_HEIGTH, WINDOW_TITLE, nullptr, nullptr);
-    if (window == nullptr) {
-        fmt::println("Failed to create GLFW window");
-        glfwTerminate();
-        return -1;
-    }
-
-    glfwMakeContextCurrent(window);
-
-    // event callbacks
-    glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
-
-    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
-        fmt::println("Failed to initialize GLAD");
-        return -1;
-    }
-
-    glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGTH);
+    WindowManager windowManager{SCREEN_WIDTH, SCREEN_HEIGTH, WINDOW_TITLE};
 
     // vertices will be used in NDC which is (-1,-1) bottom-left to (1,1) top-right with origin at (0,0)
     float vertices[] = {
@@ -132,11 +106,8 @@ int main(int argc, char** argv) {
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
 
-    while (!glfwWindowShouldClose(window)) {
-
-        glfwPollEvents();
-
-        processKeyboardInputs(window);
+    while (!windowManager.isCloseRequested()) {
+        windowManager.update();
 
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -150,19 +121,9 @@ int main(int argc, char** argv) {
         // draw triangle
         glDrawArrays(GL_TRIANGLES, 0, 3);
 
-        glfwSwapBuffers(window);
+        windowManager.swapBuffers();
     }
 
     glfwTerminate();
     return 0;
-}
-
-void framebufferSizeCallback(GLFWwindow* window, int width, int height) {
-    glViewport(0, 0, width, height);
-}
-
-void processKeyboardInputs(GLFWwindow* window) {
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
-        glfwSetWindowShouldClose(window, true);
-    }
 }
