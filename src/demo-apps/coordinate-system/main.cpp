@@ -66,6 +66,19 @@ int main(int argc, char** argv) {
             -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
     };
 
+    const std::vector<glm::vec3> cubePositions{
+            glm::vec3( 0.0f,  0.0f,  0.0f),
+            glm::vec3( 2.0f,  5.0f, -15.0f),
+            glm::vec3(-1.5f, -2.2f, -2.5f),
+            glm::vec3(-3.8f, -2.0f, -12.3f),
+            glm::vec3( 2.4f, -0.4f, -3.5f),
+            glm::vec3(-1.7f,  3.0f, -7.5f),
+            glm::vec3( 1.3f, -2.0f, -2.5f),
+            glm::vec3( 1.5f,  2.0f, -2.5f),
+            glm::vec3( 1.5f,  0.2f, -1.5f),
+            glm::vec3(-1.3f,  1.0f, -1.5f)
+    };
+
     // create VAO, VBO, EBO
     unsigned int VAO;
     glGenVertexArrays(1, &VAO);
@@ -152,19 +165,25 @@ int main(int argc, char** argv) {
         shader.setInt("texture0", 4); // 4 - GL_TEXTURE4
         shader.setInt("texture1", 8); // 8 - GL_TEXTURE8
 
+        // bind VAO then draw the cube
+        glBindVertexArray(VAO);
+
         // MVP
-        const auto model = glm::rotate(IDENTITY_MATRIX, (float)glfwGetTime() * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));
         const auto view = glm::translate(IDENTITY_MATRIX, glm::vec3{0.0, 0.0, -3.0});
         const auto projection = glm::perspective(glm::radians(45.0f), SCREEN_WIDTH/SCREEN_HEIGTH, 0.1f, 100.0f);
 
         // set uniform values
-        shader.setMat4("model", model);
         shader.setMat4("view", view);
         shader.setMat4("projection", projection);
 
-        // bind VAO then draw the cube
-        glBindVertexArray(VAO);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
+        // draw cubes with different model matrix
+        for (auto idx = 0; idx < cubePositions.size(); idx++) {
+            auto model = glm::translate(IDENTITY_MATRIX, cubePositions[idx]);
+            const float angle = 20.0f * idx;
+            model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
+            shader.setMat4("model", model);
+            glDrawArrays(GL_TRIANGLES, 0, 36);
+        }
 
         windowManager.swapBuffers();
     }
