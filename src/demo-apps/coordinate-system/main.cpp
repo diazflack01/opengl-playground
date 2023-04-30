@@ -103,11 +103,11 @@ int main(int argc, char** argv) {
      *  - model: matrix to transform to world space coordinates
      *  - view: matrix to transform to camera/eye space coordinates
      *  - projection:
-     *      - matrix to generate vec4 which clip-space can be computed by performing perspective division
-     *      - perspective division is achieved by dividing the `w` coordinate to `x`, `y`, `z` coordinate
-     *      - clip space is (-1.0, 1.0) range, any coordinate after perspective division will be discarded
-     *      - perspective division is performed after vertex shader by OpenGL
-     *      - clip space will be converted to screen-space/viewport coordinates
+     *      - matrix to generate vec4 which clip-space can be computed from by performing perspective division
+     *      - perspective division is simply dividing the `w` component to `x`, `y`, `z` component
+     *      - clip-space is (-1.0, 1.0) range, any coordinate outside this is discarded after perspective division
+     *      - perspective division is performed at/after(?) vertex shader by OpenGL
+     *      - clip-space will be converted to screen-space/viewport coordinates which is passed to fragment shader
      *
      * Below is an illustration where `Z` coordinate exceeds the far plane 100.0f. The log prints will show the vec4
      * generated from glm::perspective method and what will be the output coordinate of clip space.
