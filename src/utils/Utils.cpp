@@ -7,6 +7,8 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb/stb_image.hpp>
 
+#include <fmt/core.h>
+
 std::optional<TextureContext> tryLoadTexture(const std::string& texturePath, TextureLoadConfig textureLoadConfig)
 {
     stbi_set_flip_vertically_on_load(textureLoadConfig.flipVertically);
@@ -78,4 +80,12 @@ unsigned loadCubemapTexture(std::vector<std::string> faces, TextureLoadConfig te
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, textureLoadConfig.magFilter);
 
     return id;
+}
+
+TextureContext loadTexture(const std::string &texturePath, TextureLoadConfig textureLoadConfig) {
+    const auto loadedTexture = tryLoadTexture(texturePath, textureLoadConfig);
+    if (!loadedTexture.has_value()) {
+        throw std::runtime_error(fmt::format("Failed to load texture: {}", texturePath));
+    }
+    return loadedTexture.value();
 }

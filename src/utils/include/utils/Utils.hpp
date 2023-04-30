@@ -24,6 +24,7 @@ struct TextureLoadConfig
 };
 
 std::optional<TextureContext> tryLoadTexture(const std::string& texturePath, TextureLoadConfig textureLoadConfig = {});
+TextureContext loadTexture(const std::string& texturePath, TextureLoadConfig textureLoadConfig = {});
 
 unsigned loadCubemapTexture(std::vector<std::string> faces,
                             TextureLoadConfig textureLoadConfig = TextureLoadConfig{false, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_LINEAR, GL_LINEAR});
