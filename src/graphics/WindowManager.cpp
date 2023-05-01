@@ -92,3 +92,7 @@ void WindowManager::updateWindowSize() {
     glfwSetWindowSize(m_window, m_width, m_height);
     glViewport(0, 0, m_width, m_height);
 }
+
+GLFWwindow *WindowManager::getWindow() {
+    return m_window;
+}

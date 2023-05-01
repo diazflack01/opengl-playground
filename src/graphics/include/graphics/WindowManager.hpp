@@ -30,6 +30,8 @@ public:
     [[nodiscard]] int getHeight() const;
     [[nodiscard]] const std::string &getTitle() const;
 
+    GLFWwindow* getWindow();
+
 private:
     static void processKeyboardInputs(GLFWwindow* window);
     void updateWindowSize();
