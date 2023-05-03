@@ -346,6 +346,28 @@ void mouseMoveCallback(GLFWwindow* window, double xpos, double ypos) {
     cameraFront = glm::normalize(direction);
 
     mouse.setPosition(glm::vec2{xpos, ypos});
+
+    /*** Raycast from mouse click ***/
+    // screen-space/viewport to normalized device coordinates space
+    const float ndc_x = (2.0f * xpos) / SCREEN_WIDTH - 1.0f;
+    const float ndc_y = 1.0f - (2.0f * ypos) / SCREEN_HEIGTH;
+    fmt::println("viewport:[{}, {}] NDC:[{}, {}]", xpos, ypos, ndc_x, ndc_y);
+
+    // NDC to homogenous clip coordinates by adding `w` component.
+    // `z` component is assigned -1.0f since we're casting a ray
+    const glm::vec4 rayHomogenousClipSpace{ndc_x, ndc_y, -1.0f, 1.0f};
+    fmt::println("Ray Homogenous Clip Space: [{}]", glm::to_string(rayHomogenousClipSpace));
+
+    // Homogenous clip space to eye/camera space coordinates
+    const auto projection = glm::perspective(glm::radians(fov), SCREEN_WIDTH/SCREEN_HEIGTH, 0.1f, 100.0f);
+    const auto rayCameraSpace = glm::inverse(projection) * rayHomogenousClipSpace;
+    fmt::println("Ray Eye/Camera Space: [{}]", glm::to_string(rayCameraSpace));
+
+    // Eye/camera space to world space coordinates
+    const auto view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+    const auto rayWorldSpaceVec4 = (glm::inverse(view) * rayCameraSpace);
+    const glm::vec3 rayWorldSpaceNormalized{rayWorldSpaceVec4.x, rayWorldSpaceVec4.y, rayWorldSpaceVec4.z};
+    fmt::println("Ray World Space: [{}]", glm::to_string(rayWorldSpaceNormalized));
 }
 
 void mouseScrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
