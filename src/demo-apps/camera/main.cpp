@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#include <mutex>
 
 #include <fmt/core.h>
 
@@ -31,8 +32,113 @@ float yaw = -90;
 float fov = 45.0f;
 
 void processKeyboardInput(GLFWwindow* window);
-void mouseCallback(GLFWwindow* window, double xpos, double ypos);
-void scrollCallback(GLFWwindow* window, double xoffset, double yoffset);
+void mouseMoveCallback(GLFWwindow* window, double xpos, double ypos);
+void mouseScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
+void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
+
+class Mouse {
+public:
+    void setPosition(glm::vec2 pos) {
+        std::lock_guard<std::recursive_mutex> lg{m_mutex};
+        if (pos == m_position) {
+            return;
+        }
+        setLastPosition(m_position);
+        m_position = pos;
+        m_isDragging = m_isLeftButtonPressed || m_isRightButtonPressed;
+        fmt::println("{} -- {}", getMouseState(), __FUNCTION__);
+    }
+
+    void setScrollDelta(float delta) {
+        std::lock_guard<std::recursive_mutex> lg{m_mutex};
+        if (m_scrollDelta == delta) {
+            return;
+        }
+        m_scrollDelta = delta;
+        fmt::println("{} -- {}", getMouseState(), __FUNCTION__);
+    };
+
+    void endFrame() {
+        setScrollDelta(0);
+        setLastPosition(m_position);
+    }
+
+    float dY() const {
+        std::lock_guard<std::recursive_mutex> lg{m_mutex};
+        // y is reversed in screen coordinates
+        return m_lastPosition.y - m_position.y;
+    }
+
+    float dX() const {
+        std::lock_guard<std::recursive_mutex> lg{m_mutex};
+        return m_position.x - m_lastPosition.x;
+    }
+
+    float getScrollDelta() const {
+        std::lock_guard<std::recursive_mutex> lg{m_mutex};
+        return m_scrollDelta;
+    }
+
+    bool isDragging() const {
+        std::lock_guard<std::recursive_mutex> lg{m_mutex};
+        return m_isDragging;
+    }
+
+    void setLeftButtonPressed(bool pressed) {
+        std::lock_guard<std::recursive_mutex> lg{m_mutex};
+        if (m_isLeftButtonPressed == pressed) {
+            return;
+        }
+        m_isLeftButtonPressed = pressed;
+        fmt::println("{} -- {}", getMouseState(), __FUNCTION__);
+    }
+
+    void setRightButtonPressed(bool pressed) {
+        std::lock_guard<std::recursive_mutex> lg{m_mutex};
+        if (m_isRightButtonPressed == pressed) {
+            return;
+        }
+        m_isRightButtonPressed = pressed;
+        fmt::println("{} -- {}", getMouseState(), __FUNCTION__);
+    }
+
+    bool isLeftButtonPressed() const {
+        std::lock_guard<std::recursive_mutex> lg{m_mutex};
+        return m_isLeftButtonPressed;
+    };
+
+    bool isRightButtonPressed() const {
+        std::lock_guard<std::recursive_mutex> lg{m_mutex};
+        return m_isRightButtonPressed;
+    }
+
+    std::string getMouseState() const {
+        std::lock_guard<std::recursive_mutex> lg{m_mutex};
+        return fmt::format("MOUSE STATE left button pressed: {}, right button pressed: {}, is dragging: {}, scrollDelta: {}, pos:[{}, {}], last pos:[{}, {}]"
+        , m_isLeftButtonPressed, m_isRightButtonPressed, m_isDragging, m_scrollDelta, m_position.x, m_position.y, m_lastPosition.x, m_lastPosition.y);
+    }
+
+private:
+    void setLastPosition(glm::vec2 pos) {
+        std::lock_guard<std::recursive_mutex> lg{m_mutex};
+        if (m_lastPosition == pos) {
+            return;
+        }
+
+        m_lastPosition = pos;
+        fmt::println("{} -- {}", getMouseState(), __FUNCTION__);
+    }
+
+    bool m_isLeftButtonPressed{false};
+    bool m_isRightButtonPressed{false};
+    bool m_isDragging{false};
+    float m_scrollDelta{0};
+    glm::vec2 m_position{0,0};
+    glm::vec2 m_lastPosition{0,0};
+    mutable std::recursive_mutex m_mutex{};
+};
+
+Mouse mouse;
 
 int main(int argc, char** argv) {
     fmt::println("main ()");
@@ -40,11 +146,12 @@ int main(int argc, char** argv) {
     WindowManager windowManager{SCREEN_WIDTH, SCREEN_HEIGTH, WINDOW_TITLE};
 
     // mouse move and scroll callbacks
-    glfwSetCursorPosCallback(windowManager.getWindow(), mouseCallback);
-    glfwSetScrollCallback(windowManager.getWindow(), scrollCallback);
+    glfwSetCursorPosCallback(windowManager.getWindow(), mouseMoveCallback);
+    glfwSetScrollCallback(windowManager.getWindow(), mouseScrollCallback);
+    glfwSetMouseButtonCallback(windowManager.getWindow(), mouseButtonCallback);
 
     // disable mouse cursor
-    glfwSetInputMode(windowManager.getWindow(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+//    glfwSetInputMode(windowManager.getWindow(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     // vertices will be used in NDC which is (-1,-1) bottom-left to (1,1) top-right with origin at (0,0)
     float vertices[] = {
@@ -187,6 +294,7 @@ int main(int argc, char** argv) {
         }
 
         windowManager.swapBuffers();
+        mouse.endFrame();
     }
 
     glfwTerminate();
@@ -206,7 +314,7 @@ void processKeyboardInput(GLFWwindow* window) {
         cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
 }
 
-void mouseCallback(GLFWwindow* window, double xpos, double ypos) {
+void mouseMoveCallback(GLFWwindow* window, double xpos, double ypos) {
     if (firstMouse) // initially set to true
     {
         lastX = xpos;
@@ -236,12 +344,33 @@ void mouseCallback(GLFWwindow* window, double xpos, double ypos) {
     direction.y = sin(glm::radians(pitch));
     direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
     cameraFront = glm::normalize(direction);
+
+    mouse.setPosition(glm::vec2{xpos, ypos});
 }
 
-void scrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
+void mouseScrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
     fov -= (float)yoffset;
     if (fov < 1.0f)
         fov = 1.0f;
     if (fov > 45.0f)
         fov = 45.0f;
+
+    mouse.setScrollDelta(yoffset);
+}
+
+void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
+    switch (button) {
+        case GLFW_MOUSE_BUTTON_LEFT:
+        {
+            const auto leftButtonPressed = action == GLFW_PRESS;
+            mouse.setLeftButtonPressed(leftButtonPressed);
+            break;
+        }
+        case GLFW_MOUSE_BUTTON_RIGHT:
+        {
+            const auto rightButtonPressed = action == GLFW_PRESS;
+            mouse.setRightButtonPressed(rightButtonPressed);
+            break;
+        }
+    }
 }
