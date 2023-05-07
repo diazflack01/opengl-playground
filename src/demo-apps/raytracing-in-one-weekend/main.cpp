@@ -5,6 +5,8 @@
 #include "vec3.hpp"
 #include "ray.hpp"
 #include "sphere.hpp"
+#include "utils.hpp"
+#include "hittable_list.hpp"
 
 color ray_color(const ray& r) {
     sphere sphere{point3{0,0,-1}, 0.5f};
