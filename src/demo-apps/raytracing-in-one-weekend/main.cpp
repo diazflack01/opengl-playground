@@ -7,6 +7,7 @@
 #include "sphere.hpp"
 #include "utils.hpp"
 #include "hittable_list.hpp"
+#include "camera.hpp"
 
 color ray_color(const ray& r, const hittable& world) {
     hit_record rec;
