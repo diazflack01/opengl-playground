@@ -9,7 +9,13 @@
 #include "hittable_list.hpp"
 #include "camera.hpp"
 
-color ray_color(const ray& r, const hittable& world, int depth = 4) {
+enum class DiffuseRayReflectScatterType {
+    UNIT_SPHERE,
+    UNIT_VECTOR_SPHERE,
+    HEMISPHERE,
+};
+
+color ray_color(const ray& r, const hittable& world, int depth = 4, DiffuseRayReflectScatterType diffuseType = DiffuseRayReflectScatterType::HEMISPHERE) {
     hit_record rec;
 
     if (depth <= 0)
@@ -17,9 +23,20 @@ color ray_color(const ray& r, const hittable& world, int depth = 4) {
 
     // Fix shadow acne by using 0.001
     if (world.hit(r, 0.001, infinity, rec)) {
-        // (1) rec.p + rec.normal: vector from intersection point to unit sphere tangent to it
-        // (2) from (1), get random point within unit sphere distance
-        point3 target = rec.p + rec.normal + random_unit_vector();
+        const auto diffuseReflectRay = [&]{
+            switch (diffuseType) {
+                // UNIT_SPHERE, UNIT_VECTOR_SPHERE is offset of intersection point from normal
+                case DiffuseRayReflectScatterType::UNIT_SPHERE:
+                    return random_in_unit_sphere();
+                case DiffuseRayReflectScatterType::UNIT_VECTOR_SPHERE:
+                    return random_unit_vector();
+                // does not rely on intersection point
+                case DiffuseRayReflectScatterType::HEMISPHERE:
+                    return random_in_hemisphere(rec.normal);
+            }
+        }();
+
+        point3 target = rec.p + rec.normal + diffuseReflectRay;
         // `target - rec.p`, random ray bounce from intersection point
         return 0.5 * ray_color(ray(rec.p, target - rec.p), world, depth-1);
     }
