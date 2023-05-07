@@ -2,9 +2,12 @@
 
 #include "ray.hpp"
 
+class material;
+
 struct hit_record {
     point3 p; // intersection point
     vec3 normal;
+    std::shared_ptr<material> mat_ptr;
     double t; // distance of intersection point from camera ray
     bool front_face;
 
