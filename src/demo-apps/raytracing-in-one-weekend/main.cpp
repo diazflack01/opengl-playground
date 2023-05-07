@@ -8,27 +8,14 @@
 #include "utils.hpp"
 #include "hittable_list.hpp"
 
-color ray_color(const ray& r) {
-    sphere sphere{point3{0,0,-1}, 0.5f};
-    hit_record sphere_hit_info;
-    // camera/eye position is at (0,0,0), setting this to 0.1 so it's in front
-    const auto t_min = 0.1;
-    // set this to 1 same as focal length and sphere's center
-    // this means all the points of spehere beyond `z=-1` will be discarded
-    const auto t_max = 1.f;
-
-    const bool hasRaySphereIntersection = sphere.hit(r, t_min, t_max, sphere_hit_info);
-
-    // if sphere is hit, use normal as color value
-    if (hasRaySphereIntersection) {
-        vec3 N = sphere_hit_info.normal;
-        return 0.5*color(N.x()+1, N.y()+1, N.z()+1);
+color ray_color(const ray& r, const hittable& world) {
+    hit_record rec;
+    if (world.hit(r, 0, infinity, rec)) {
+        return 0.5 * (rec.normal + color(1,1,1)); // map (-1,1) to (0, 1)
     }
-
-    auto ray_sphere_intersection = sphere_hit_info.t;
     vec3 unit_direction = unit_vector(r.direction()); // unit vector will be in range `-1.0 < val < 1.0`
-    ray_sphere_intersection = 0.5 * (unit_direction.y() + 1.0); // convert unit vector length to `0 <= val <= 1`
-    return (1.0 - ray_sphere_intersection) * color(1.0, 1.0, 1.0) + ray_sphere_intersection * color(0.5, 0.7, 1.0); // LERP/linear interpolation/blend `(1-t) * startValue + t * endValue`
+    auto t = 0.5*(unit_direction.y() + 1.0); // map (-1,1) to (0, 1)
+    return (1.0-t)*color(1.0, 1.0, 1.0) + t*color(0.5, 0.7, 1.0); // LERP/linear interpolation/blend `(1-t) * startValue + t * endValue`
 }
 
 int main() {
@@ -36,6 +23,11 @@ int main() {
     const auto aspect_ratio = 16.0 / 9.0;
     const int image_width = 400;
     const int image_height = static_cast<int>(image_width / aspect_ratio);
+
+    // World
+    hittable_list world;
+    world.add(std::make_shared<sphere>(point3(0,0,-1), 0.5));
+    world.add(std::make_shared<sphere>(point3(0,-100.5,-1), 100));
 
     // Camera
     auto viewport_height = 2.0;
@@ -59,7 +51,7 @@ int main() {
             auto v = double(j) / (image_height-1);
             auto viewport_pixel = lower_left_corner + u*horizontal + v*vertical;
             ray r(origin,  viewport_pixel - origin);
-            color pixel_color = ray_color(r);
+            color pixel_color = ray_color(r, world);
             write_color(ofs, pixel_color);
         }
     }
