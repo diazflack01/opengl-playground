@@ -3,9 +3,9 @@
 #include "ray.hpp"
 
 struct hit_record {
-    point3 p;
+    point3 p; // intersection point
     vec3 normal;
-    double t;
+    double t; // distance of intersection point from camera ray
 };
 
 class hittable {

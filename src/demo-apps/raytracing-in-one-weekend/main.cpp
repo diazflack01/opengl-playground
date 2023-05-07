@@ -4,38 +4,29 @@
 #include "color.hpp"
 #include "vec3.hpp"
 #include "ray.hpp"
-
-double hit_sphere(const point3& center, double radius, const ray& r) {
-    // Analytic solution - https://www.scratchapixel.com/lessons/3d-basic-rendering/minimal-ray-tracer-rendering-simple-shapes/ray-sphere-intersection.html
-    vec3 oc = r.origin() - center;
-    // simplify equation by substituting `b = 2h`
-    auto a = r.direction().length_squared();
-    auto half_b = dot(oc, r.direction());
-    auto c = oc.length_squared() - radius*radius;
-    auto discriminant = half_b*half_b - a*c;
-
-    if (discriminant < 0) {
-        return -1.0;
-    } else {
-        // quadratic equation to solve for actual `t` distance to get intersection point in sphere
-        return (-half_b - sqrt(discriminant) ) / (2.0*a);
-    }
-}
+#include "sphere.hpp"
 
 color ray_color(const ray& r) {
-    // if sphere is hit, get normal and use that as color value
-    const point3 sphere_center(0,0,-1);
-    const float sphere_radius = 0.5f;
-    auto t = hit_sphere(sphere_center, sphere_radius, r);
-    if (t > 0.0) {
-        const auto ray_sphere_intersection = r.at(t);
-        vec3 N = unit_vector(ray_sphere_intersection - sphere_center);
+    sphere sphere{point3{0,0,-1}, 0.5f};
+    hit_record sphere_hit_info;
+    // camera/eye position is at (0,0,0), setting this to 0.1 so it's in front
+    const auto t_min = 0.1;
+    // set this to 1 same as focal length and sphere's center
+    // this means all the points of spehere beyond `z=-1` will be discarded
+    const auto t_max = 1.f;
+
+    const bool hasRaySphereIntersection = sphere.hit(r, t_min, t_max, sphere_hit_info);
+
+    // if sphere is hit, use normal as color value
+    if (hasRaySphereIntersection) {
+        vec3 N = sphere_hit_info.normal;
         return 0.5*color(N.x()+1, N.y()+1, N.z()+1);
     }
 
+    auto ray_sphere_intersection = sphere_hit_info.t;
     vec3 unit_direction = unit_vector(r.direction()); // unit vector will be in range `-1.0 < val < 1.0`
-    t = 0.5*(unit_direction.y() + 1.0); // convert unit vector length to `0 <= val <= 1`
-    return (1.0-t)*color(1.0, 1.0, 1.0) + t*color(0.5, 0.7, 1.0); // LERP/linear interpolation/blend `(1-t) * startValue + t * endValue`
+    ray_sphere_intersection = 0.5 * (unit_direction.y() + 1.0); // convert unit vector length to `0 <= val <= 1`
+    return (1.0 - ray_sphere_intersection) * color(1.0, 1.0, 1.0) + ray_sphere_intersection * color(0.5, 0.7, 1.0); // LERP/linear interpolation/blend `(1-t) * startValue + t * endValue`
 }
 
 int main() {
