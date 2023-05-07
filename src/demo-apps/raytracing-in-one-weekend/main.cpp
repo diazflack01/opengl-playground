@@ -19,7 +19,7 @@ color ray_color(const ray& r, const hittable& world, int depth = 4) {
     if (world.hit(r, 0.001, infinity, rec)) {
         // (1) rec.p + rec.normal: vector from intersection point to unit sphere tangent to it
         // (2) from (1), get random point within unit sphere distance
-        point3 target = rec.p + rec.normal + vec3::random_in_unit_sphere();
+        point3 target = rec.p + rec.normal + random_unit_vector();
         // `target - rec.p`, random ray bounce from intersection point
         return 0.5 * ray_color(ray(rec.p, target - rec.p), world, depth-1);
     }
