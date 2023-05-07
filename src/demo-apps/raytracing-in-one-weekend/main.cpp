@@ -15,7 +15,8 @@ color ray_color(const ray& r, const hittable& world, int depth = 4) {
     if (depth <= 0)
         return color{0,0,0};
 
-    if (world.hit(r, 0, infinity, rec)) {
+    // Fix shadow acne by using 0.001
+    if (world.hit(r, 0.001, infinity, rec)) {
         // (1) rec.p + rec.normal: vector from intersection point to unit sphere tangent to it
         // (2) from (1), get random point within unit sphere distance
         point3 target = rec.p + rec.normal + vec3::random_in_unit_sphere();
