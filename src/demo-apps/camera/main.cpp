@@ -24,12 +24,12 @@ float deltaTime = 0.0f;	// Time between current frame and last frame
 float lastFrame = 0.0f; // Time of last frame
 
 // mouse position
-float lastX = 400;
-float lastY = 300;
+float lastX = SCREEN_WIDTH / 2.0;
+float lastY = SCREEN_HEIGTH / 2.0;
 bool firstMouse = true;
-float pitch = 0;
-float yaw = -90;
-float fov = 45.0f;
+float pitch = 0; // positive: look up, negative: look down
+float yaw = -90; // positive: rotate right, negative: rotate left
+float fov = 45.0f; // smaller: zoomed-in, larger: zoomed-out
 
 void processKeyboardInput(GLFWwindow* window);
 void mouseMoveCallback(GLFWwindow* window, double xpos, double ypos);
@@ -323,7 +323,10 @@ void mouseMoveCallback(GLFWwindow* window, double xpos, double ypos) {
     }
 
     float xoffset = xpos - lastX;
-    float yoffset = lastY - ypos; // reversed since y-coordinates range from bottom to top
+    // screen-space coordinate goes from top to bottom, so subtraction is flipped to get positive number when mouse is
+    // moved upwards, and negative when moved downwards. This is necessary because pitch calculation uses negative
+    // number to look down and positive to look up
+    float yoffset = lastY - ypos;
     lastX = xpos;
     lastY = ypos;
 
