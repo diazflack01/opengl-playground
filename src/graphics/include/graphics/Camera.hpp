@@ -32,7 +32,7 @@ public:
         BoundedData<float> pitch;
         BoundedData<float> yaw;
         Sensitivity sensitivity;
-        glm::vec2 mouseXYPos;
+        glm::vec2 mouseXYPos; // lastXYPos
         bool clampPitch;
     };
 

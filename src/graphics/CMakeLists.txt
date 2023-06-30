@@ -8,7 +8,8 @@ add_library(${LIB_NAME}
         Bone.cpp
         Animation.cpp
         Animator.cpp
-        WindowManager.cpp)
+        WindowManager.cpp
+        Mouse.cpp)
 
 target_compile_features(${LIB_NAME} PRIVATE cxx_std_17)
 target_link_libraries(${LIB_NAME} PRIVATE glfw assimp glm glad utils)

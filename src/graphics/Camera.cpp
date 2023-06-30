@@ -1,6 +1,7 @@
 #include "Camera.hpp"
 #include "glm/ext/matrix_transform.hpp"
-#include <iostream>
+
+#include <fmt/core.h>
 
 template<typename T>
 T clamp(const Camera::BoundedData<T>& data) {
@@ -44,7 +45,7 @@ void Camera::processMovement(Camera::Movement movement, float deltaTime) {
 }
 
 void Camera::processMouseMovement(float xPos, float yPos) {
-    std::cout << "Camera::processMouseMovement xPos:" << xPos << " yPos:" << yPos << std::endl;
+    fmt::println("xPos:{} yPos:{} -- {}", xPos, yPos, __FUNCTION__);
     glm::vec2 XYOffset = [&]{
         if (mFirstMouseMovement) {
             mFirstMouseMovement = false;
@@ -67,8 +68,7 @@ void Camera::processMouseMovement(float xPos, float yPos) {
     mConfigState.yaw.val = clamp(mConfigState.yaw);
     mConfigState.pitch.val = mConfigState.clampPitch ? clamp(mConfigState.pitch) : mConfigState.pitch.val;
 
-    std::cout << "pitch:" << mConfigState.pitch.val << " yaw:" << mConfigState.yaw.val
-        << " xOffset:" << XYOffset.x << " yOffset:" << XYOffset.y << std::endl;
+    fmt::println("pitch:{} yaw:{} xOffset:{} yOffset:{} -- {}", mConfigState.pitch.val, mConfigState.yaw.val, XYOffset.x, XYOffset.y, __FUNCTION__);
 
     glm::vec3 direction;
     direction.x = cos(glm::radians(mConfigState.yaw.val)) * cos(glm::radians(mConfigState.pitch.val));
