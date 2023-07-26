@@ -137,9 +137,6 @@ int main(int argc, char** argv) {
     Shader lightCubeShader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/demo_phong_lighting_light.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/demo_phong_lighting_light.frag"};
 
     // light cube position data
-    const glm::vec3 lightPos{1.2f, 1.0f, 2.0f};
-    const auto lightCubeScaleMatrix = glm::scale(IDENTITY_MATRIX, glm::vec3{0.2f});
-    const auto lightCubeTranslateMatrix = glm::translate(IDENTITY_MATRIX, lightPos);
 
     // draw wireframe. Default is GL_FILL
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -170,6 +167,10 @@ int main(int argc, char** argv) {
         glBindVertexArray(VAO);
 
         // draw light cube
+        const auto currTime = glfwGetTime();
+        const glm::vec3 lightPos{sin(currTime) * 1.2f, cos(currTime) * 1.0f, sin(currTime) * 2.0f};
+        const auto lightCubeScaleMatrix = glm::scale(IDENTITY_MATRIX, glm::vec3{0.2f});
+        const auto lightCubeTranslateMatrix = glm::translate(IDENTITY_MATRIX, lightPos);
         lightCubeShader.use();
         lightCubeShader.setMat4("model", lightCubeTranslateMatrix * lightCubeScaleMatrix);
         lightCubeShader.setMat4("view", view);
