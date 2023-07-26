@@ -17,9 +17,9 @@
 const float SCREEN_WIDTH = 800.0f;
 const float SCREEN_HEIGTH = 600.0f;
 const auto WINDOW_TITLE = "demo-phong-lighting";
-constexpr glm::mat4 IDENTITY_MATRIX{1.0};
+constexpr glm::mat4 IDENTITY_MATRIX{1.0f};
 
-const glm::vec3 cameraPos   = glm::vec3(0.0f, 0.0f,  3.0f);
+const glm::vec3 cameraPos   = glm::vec3(0.0f, 0.0f,  5.0f);
 const glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
 const glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 
@@ -67,61 +67,49 @@ int main(int argc, char** argv) {
 //    glfwSetInputMode(windowManager.getWindow(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     // vertices will be used in NDC which is (-1,-1) bottom-left to (1,1) top-right with origin at (0,0)
+    // pos (px,py,pz), normal (nx,ny,nz)
     float vertices[] = {
-            -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-            0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
-            0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-            0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-            -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-            -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+            -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+            0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+            0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+            0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+            -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+            -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
 
-            -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-            0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-            0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-            0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-            -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
-            -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+            -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+            0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+            0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+            0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+            -0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+            -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
 
-            -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-            -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-            -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-            -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-            -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-            -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+            -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+            -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+            -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+            -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+            -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+            -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
 
-            0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-            0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-            0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-            0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-            0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-            0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+            0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+            0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+            0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+            0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+            0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+            0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
 
-            -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-            0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
-            0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-            0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-            -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-            -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+            -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+            0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+            0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+            0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+            -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+            -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
 
-            -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-            0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-            0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-            0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-            -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
-            -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
-    };
-
-    const std::vector<glm::vec3> cubePositions{
-            glm::vec3( 0.0f,  0.0f,  0.0f),
-            glm::vec3( 2.0f,  5.0f, -15.0f),
-            glm::vec3(-1.5f, -2.2f, -2.5f),
-            glm::vec3(-3.8f, -2.0f, -12.3f),
-            glm::vec3( 2.4f, -0.4f, -3.5f),
-            glm::vec3(-1.7f,  3.0f, -7.5f),
-            glm::vec3( 1.3f, -2.0f, -2.5f),
-            glm::vec3( 1.5f,  2.0f, -2.5f),
-            glm::vec3( 1.5f,  0.2f, -1.5f),
-            glm::vec3(-1.3f,  1.0f, -1.5f)
+            -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
+            0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
+            0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+            0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+            -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+            -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
     };
 
     // create VAO, VBO, EBO
@@ -137,18 +125,21 @@ int main(int argc, char** argv) {
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
     // set VAO data layout attributes for vertex shader usage
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
     // unbind VAO
     glBindVertexArray(0);
 
-    Shader shader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/demo_coordinate_system.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/demo_coordinate_system.frag"};
-    const auto textureAwesomeFace = loadTexture("/home/kelvin.robles/work/repos/personal/opengl-playground/resources/texture/awesomeface.png");
-    const auto textureWoodenContainer = loadTexture("/home/kelvin.robles/work/repos/personal/opengl-playground/resources/texture/wooden_container.jpg");
-    const auto texturePepefrog = loadTexture("/home/kelvin.robles/work/repos/personal/opengl-playground/resources/texture/pepe-frog.jpg");
+    Shader phongLightingShader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/demo_phong_lighting.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/demo_phong_lighting.frag"};
+    Shader lightCubeShader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/demo_phong_lighting_light.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/demo_phong_lighting_light.frag"};
+
+    // light cube position data
+    const glm::vec3 lightPos{1.2f, 1.0f, 2.0f};
+    const auto lightCubeScaleMatrix = glm::scale(IDENTITY_MATRIX, glm::vec3{0.2f});
+    const auto lightCubeTranslateMatrix = glm::translate(IDENTITY_MATRIX, lightPos);
 
     // draw wireframe. Default is GL_FILL
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -161,50 +152,41 @@ int main(int argc, char** argv) {
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
 
+        // call update to poll events of window
         windowManager.update();
 
+        // process keyboard inputs
+        processKeyboardInput(windowManager.getWindow());
+
+        // clear buffers
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        // use program
-        shader.use();
-
-        // activate and set texture unit
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, textureAwesomeFace.id);
-        glActiveTexture(GL_TEXTURE8);
-        glBindTexture(GL_TEXTURE_2D, texturePepefrog.id);
-        glActiveTexture(GL_TEXTURE4);
-        glBindTexture(GL_TEXTURE_2D, textureWoodenContainer.id);
-
-        // set texture sampler2D's in fragment shader
-        shader.setInt("texture0", 4); // 4 - GL_TEXTURE4
-        shader.setInt("texture1", 8); // 8 - GL_TEXTURE8
-
-        // camera
-        processKeyboardInput(windowManager.getWindow());
+        // view and projection matrix
         const auto view = camera.getViewMatrix();
-
-        // bind VAO then draw the cube
-        glBindVertexArray(VAO);
-
-        // MVP
         const auto projection = glm::perspective(glm::radians(camera.getFieldOfView()), SCREEN_WIDTH/SCREEN_HEIGTH, 0.1f, 100.0f);
 
-        // set uniform values
-        shader.setMat4("view", view);
-        shader.setMat4("projection", projection);
+        // bind cube VAO
+        glBindVertexArray(VAO);
 
-        // draw cubes with different model matrix
-        for (auto idx = 0; idx < cubePositions.size(); idx++) {
-            shader.setInt("texture1", idx % 2 == 0 ? 0 : 8); // change textures
+        // draw light cube
+        lightCubeShader.use();
+        lightCubeShader.setMat4("model", lightCubeTranslateMatrix * lightCubeScaleMatrix);
+        lightCubeShader.setMat4("view", view);
+        lightCubeShader.setMat4("projection", projection);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
 
-            auto model = glm::translate(IDENTITY_MATRIX, cubePositions[idx]);
-            const float angle = 20.0f * idx;
-            model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
-            shader.setMat4("model", model);
-            glDrawArrays(GL_TRIANGLES, 0, 36);
-        }
+        // draw cube with phong lighting
+        phongLightingShader.use();
+        const auto& camPos = camera.getPosition();
+        phongLightingShader.setVec3Float("viewPos", camPos.x, camPos.y, camPos.z);
+        phongLightingShader.setVec3Float("lightPos", lightPos.x, lightPos.y, lightPos.z);
+        phongLightingShader.setVec3Float("lightColor", 1.0f, 1.0f, 1.0f);
+        phongLightingShader.setVec3Float("objectColor", 1.0f, 0.5f, 0.31f);
+        phongLightingShader.setMat4("model", IDENTITY_MATRIX);
+        phongLightingShader.setMat4("view", view);
+        phongLightingShader.setMat4("projection", projection);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
 
         windowManager.swapBuffers();
         mouse.endFrame();
