@@ -181,8 +181,17 @@ int main(int argc, char** argv) {
         phongLightingShader.use();
         const auto& camPos = camera.getPosition();
         phongLightingShader.setVec3Float("viewPos", camPos.x, camPos.y, camPos.z);
-        phongLightingShader.setVec3Float("lightPos", lightPos.x, lightPos.y, lightPos.z);
-        phongLightingShader.setVec3Float("lightColor", 1.0f, 1.0f, 1.0f);
+        // light
+        phongLightingShader.setVec3Float("light.position",  lightPos.x, lightPos.y, lightPos.z);
+        phongLightingShader.setVec3Float("light.ambient",  0.2f, 0.2f, 0.2f);
+        phongLightingShader.setVec3Float("light.diffuse",  0.5f, 0.5f, 0.5f); // darken diffuse light a bit
+        phongLightingShader.setVec3Float("light.specular", 1.0f, 1.0f, 1.0f);
+        // material
+        phongLightingShader.setVec3Float("material.ambient", 1.0f, 0.5f, 0.31f);
+        phongLightingShader.setVec3Float("material.diffuse", 1.0f, 0.5f, 0.31f);
+        phongLightingShader.setVec3Float("material.specular", 0.5f, 0.5f, 0.5f);
+        phongLightingShader.setFloat("material.shininess", 32.0f);
+
         phongLightingShader.setVec3Float("objectColor", 1.0f, 0.5f, 0.31f);
         phongLightingShader.setMat4("model", IDENTITY_MATRIX);
         phongLightingShader.setMat4("view", view);
