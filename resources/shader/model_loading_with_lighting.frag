@@ -58,7 +58,7 @@ struct PointLight {
 
 #define NR_POINT_LIGHTS 4
 uniform PointLight pointLights[NR_POINT_LIGHTS];
-uniform int numPointLights;
+uniform int numPointLights = 0;
 
 vec3 calcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir);
 
@@ -78,7 +78,7 @@ struct SpotLight {
 };
 
 uniform SpotLight spotLight;
-uniform bool hasSpotLight;
+uniform bool hasSpotLight = false;
 
 vec3 calcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir);
 

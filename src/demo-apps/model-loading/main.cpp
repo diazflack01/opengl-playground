@@ -18,13 +18,13 @@ float lastFrame = 0.0f; // Time of last frame
 
 const float SCREEN_WIDTH = 800.0f * 1.5;
 const float SCREEN_HEIGTH = 600.0f * 1.5;
-const auto WINDOW_TITLE = "LearnOpenGL";
+const auto WINDOW_TITLE = "demo-model-loading";
 
 float mousePosX = 0.0;
 float mousePosY = 0.0;
 
 Camera::ConfigState cameraConfig{
-        glm::vec3(-1.0f, 1.0f,  50.0f),
+        glm::vec3(0.0f, 0.0f,  10.0f),
         glm::vec3(0.0f, 0.0f, -1.0f),
         glm::vec3(0.0f, 1.0f,  0.0f),
         Camera::BoundedData<float>{45.0f, 1.0f, 90.0f},
@@ -72,9 +72,9 @@ int main(int argc, char** argv) {
     glfwSetCursorPosCallback(window, mouseCallback);
     glfwSetScrollCallback(window, scrollCallback);
 
-    Shader modelNoLightingShader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/model_loading.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/model_loading.frag"};
+    Shader modelWithLightingShader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/model_loading.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/model_loading_with_lighting.frag"};
+    Model vampireModel{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/models/vampire/dancing_vampire.dae"};
     Model backPackModel{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/models/backpack/backpack.obj"};
-//    Model vampireModel{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/models/vampire/dancing_vampire.dae"};
 
     glEnable(GL_DEPTH_TEST);
 
@@ -94,13 +94,37 @@ int main(int argc, char** argv) {
         const glm::mat4 view = camera.getViewMatrix();
         const glm::mat4 projection = glm::perspective(glm::radians(camera.getFieldOfView()), SCREEN_WIDTH/SCREEN_HEIGTH, 0.1f, 100.0f);
 
-        modelNoLightingShader.use();
-        modelNoLightingShader.setMat4("projection", projection);
-        modelNoLightingShader.setMat4("view", view);
-//        modelNoLightingShader.setMat4("model", glm::translate(glm::scale(glm::mat4{1.0f}, glm::vec3{0.05f, 0.05f, 0.05f}), glm::vec3{0.0f, -20.f,0.0f}));
-        modelNoLightingShader.setMat4("model", glm::mat4{1.0f});
-//        vampireModel.draw(modelNoLightingShader);
-        backPackModel.draw(modelNoLightingShader);
+        modelWithLightingShader.use();
+        // set shader lighting uniforms
+        modelWithLightingShader.setFloat("material.shininess", 32.0f);
+        modelWithLightingShader.setInt("numPointLights", 0);
+        modelWithLightingShader.setBool("hasSpotLight", false);
+        modelWithLightingShader.setVec3Float("directionalLight.direction", -0.2f, -1.0f, -0.3f);
+        modelWithLightingShader.setVec3Float("directionalLight.ambient", 0.2f, 0.2f, 0.2f);
+        modelWithLightingShader.setVec3Float("directionalLight.diffuse", 0.5f, 0.5f, 0.5f);
+        modelWithLightingShader.setVec3Float("directionalLight.specular", 1.0f, 1.0f, 1.0f);
+        modelWithLightingShader.setVec3Float("viewPos", camera.getPosition().x, camera.getPosition().y, camera.getPosition().z);
+        // set shared view, projection value
+        modelWithLightingShader.setMat4("projection", projection);
+        modelWithLightingShader.setMat4("view", view);
+        // draw vampire
+        const auto vampireModelMatrix = []{
+            const auto identityMatrix = glm::mat4{1.0f};
+            const auto scaleMatrix = glm::scale(identityMatrix, glm::vec3{0.05f, 0.05f, 0.05f});
+            const auto translateMatrix = glm::translate(identityMatrix, glm::vec3{-5.0f, -5.0f, -13.0f});
+            return translateMatrix * scaleMatrix;
+        }();
+        modelWithLightingShader.setMat4("model", vampireModelMatrix);
+        vampireModel.draw(modelWithLightingShader);
+        // draw backpack
+        const auto backModelMatrix = []{
+            const auto identityMatrix = glm::mat4{1.0f};
+            const auto rotationMatrix = glm::rotate(identityMatrix, glm::radians(180.0f), glm::vec3{.0f, 1.0f, .0f});
+            const auto translateMatrix = glm::translate(identityMatrix, glm::vec3{3.0f, .0f, -3.0f});
+            return translateMatrix;
+        }();
+        modelWithLightingShader.setMat4("model", backModelMatrix);
+        backPackModel.draw(modelWithLightingShader);
 
         glfwSwapBuffers(window);
     }
@@ -130,9 +154,6 @@ void processKeyboardInputs(GLFWwindow* window) {
 
 void mouseCallback(GLFWwindow* window, double xpos, double ypos) {
     camera.processMouseMovement(xpos, ypos);
-    mousePosX = xpos;
-    // GLFW originates from top-left, OpenGL is bottom-left
-    mousePosY = SCREEN_HEIGTH - ypos;
 }
 
 void scrollCallback(GLFWwindow* window, double xoffset, double yoffset) {

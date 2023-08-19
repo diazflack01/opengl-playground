@@ -52,6 +52,7 @@ void Camera::processMouseMovement(float xPos, float yPos) {
             return glm::vec2{0.0f, 0.0f};
         }
         const auto& lastXY = mConfigState.mouseXYPos;
+        // For y; GLFW originates from top-left, OpenGL is bottom-left
         return glm::vec2 {xPos - lastXY.x, lastXY.y - yPos};
     }();
 

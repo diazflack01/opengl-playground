@@ -12,7 +12,6 @@
 #include <utils/Utils.hpp>
 #include <utils/ScopedTimer.hpp>
 
-
 struct Model::Impl {
     // model data
     std::vector<Mesh> m_meshes;
