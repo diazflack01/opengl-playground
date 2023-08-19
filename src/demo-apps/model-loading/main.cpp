@@ -72,9 +72,9 @@ int main(int argc, char** argv) {
     glfwSetCursorPosCallback(window, mouseCallback);
     glfwSetScrollCallback(window, scrollCallback);
 
-    Shader modelWithLightingShader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/model_loading.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/model_loading_with_lighting.frag"};
-    Model vampireModel{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/models/vampire/dancing_vampire.dae"};
-    Model backPackModel{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/models/backpack/backpack.obj"};
+    Shader modelWithLightingShader{"resources/shader/model_loading.vert", "resources/shader/model_loading_with_lighting.frag"};
+    Model vampireModel{"resources/models/vampire/dancing_vampire.dae"};
+    Model backPackModel{"resources/models/backpack/backpack.obj"};
 
     glEnable(GL_DEPTH_TEST);
 

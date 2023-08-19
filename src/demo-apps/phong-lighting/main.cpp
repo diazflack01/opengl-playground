@@ -136,10 +136,10 @@ int main(int argc, char** argv) {
     // unbind VAO
     glBindVertexArray(0);
 
-    Shader phongLightingShader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/demo_phong_lighting.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/demo_phong_lighting.frag"};
-    Shader lightCubeShader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/demo_phong_lighting_light.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/demo_phong_lighting_light.frag"};
-    const auto containerDiffuse = loadTexture("/home/kelvin.robles/work/repos/personal/opengl-playground/resources/texture/container2.png");
-    const auto containerSpecular = loadTexture("/home/kelvin.robles/work/repos/personal/opengl-playground/resources/texture/container2_specular.png");
+    Shader phongLightingShader{"resources/shader/demo_phong_lighting.vert", "resources/shader/demo_phong_lighting.frag"};
+    Shader lightCubeShader{"resources/shader/demo_phong_lighting_light.vert", "resources/shader/demo_phong_lighting_light.frag"};
+    const auto containerDiffuse = loadTexture("resources/texture/container2.png");
+    const auto containerSpecular = loadTexture("resources/texture/container2_specular.png");
 
     // light cube position data
 

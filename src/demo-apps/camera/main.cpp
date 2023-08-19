@@ -232,10 +232,10 @@ int main(int argc, char** argv) {
     // unbind VAO
     glBindVertexArray(0);
 
-    Shader shader{"/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/demo_coordinate_system.vert", "/home/kelvin.robles/work/repos/personal/opengl-playground/resources/shader/demo_coordinate_system.frag"};
-    const auto textureAwesomeFace = loadTexture("/home/kelvin.robles/work/repos/personal/opengl-playground/resources/texture/awesomeface.png");
-    const auto textureWoodenContainer = loadTexture("/home/kelvin.robles/work/repos/personal/opengl-playground/resources/texture/wooden_container.jpg");
-    const auto texturePepefrog = loadTexture("/home/kelvin.robles/work/repos/personal/opengl-playground/resources/texture/pepe-frog.jpg");
+    Shader shader{"resources/shader/demo_coordinate_system.vert", "resources/shader/demo_coordinate_system.frag"};
+    const auto textureAwesomeFace = loadTexture("resources/texture/awesomeface.png");
+    const auto textureWoodenContainer = loadTexture("resources/texture/wooden_container.jpg");
+    const auto texturePepefrog = loadTexture("resources/texture/pepe-frog.jpg");
 
     // draw wireframe. Default is GL_FILL
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
