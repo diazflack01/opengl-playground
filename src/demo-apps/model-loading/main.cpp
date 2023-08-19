@@ -18,7 +18,7 @@ float lastFrame = 0.0f; // Time of last frame
 
 const float SCREEN_WIDTH = 800.0f * 1.5;
 const float SCREEN_HEIGTH = 600.0f * 1.5;
-const auto WINDOW_TITLE = "demo-model-loading";
+const auto WINDOW_TITLE = APP_NAME;
 constexpr glm::mat4 IDENTITY_MATRIX{1.0f};
 
 float mousePosX = 0.0;

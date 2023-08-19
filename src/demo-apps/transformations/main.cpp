@@ -11,7 +11,7 @@
 
 const float SCREEN_WIDTH = 800.0f * 1.5;
 const float SCREEN_HEIGTH = 600.0f * 1.5;
-const auto WINDOW_TITLE = "demo-textures";
+const auto WINDOW_TITLE = APP_NAME;
 
 
 int main(int argc, char** argv) {

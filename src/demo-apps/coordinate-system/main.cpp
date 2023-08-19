@@ -12,7 +12,7 @@
 
 const float SCREEN_WIDTH = 800.0f;
 const float SCREEN_HEIGTH = 600.0f;
-const auto WINDOW_TITLE = "demo-coordinate-system";
+const auto WINDOW_TITLE = APP_NAME;
 constexpr glm::mat4 IDENTITY_MATRIX{1.0};
 
 

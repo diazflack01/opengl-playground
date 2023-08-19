@@ -16,7 +16,7 @@
 
 const float SCREEN_WIDTH = 800.0f;
 const float SCREEN_HEIGTH = 600.0f;
-const auto WINDOW_TITLE = "demo-phong-lighting";
+const auto WINDOW_TITLE = APP_NAME;
 constexpr glm::mat4 IDENTITY_MATRIX{1.0f};
 
 const glm::vec3 cameraPos   = glm::vec3(0.0f, 0.0f,  5.0f);
