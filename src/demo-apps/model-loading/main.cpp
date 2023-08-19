@@ -147,6 +147,7 @@ int main(int argc, char** argv) {
     // Model backPackModel{"resources/models/backpack/backpack.obj"};
 
     glEnable(GL_DEPTH_TEST);
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     while (!glfwWindowShouldClose(window)) {
         const float currentFrame = glfwGetTime();
@@ -182,7 +183,9 @@ int main(int argc, char** argv) {
 
         modelWithLightingShader.use();
         // set shader lighting uniforms
+        // material property
         modelWithLightingShader.setFloat("material.shininess", 32.0f);
+        // point lights
         modelWithLightingShader.setInt("numPointLights", lightPositions.size());
         for (auto i = 0u; i < lightPositions.size(); i++) {
             const auto pointLightPrefixStr = "pointLights[" + std::to_string(i) + "]";
@@ -194,7 +197,19 @@ int main(int argc, char** argv) {
             modelWithLightingShader.setVec3Float(pointLightPrefixStr + ".diffuse", 0.5f, 0.5f, 0.5f);
             modelWithLightingShader.setVec3Float(pointLightPrefixStr + ".specular", 1.0f, 1.0f, 1.0f);
         }
-        modelWithLightingShader.setBool("hasSpotLight", false);
+        // spotlight
+        modelWithLightingShader.setBool("hasSpotLight", true);
+        modelWithLightingShader.setVec3Float("spotLight.position", camera.getPosition().x, camera.getPosition().y, camera.getPosition().z);
+        modelWithLightingShader.setVec3Float("spotLight.direction", camera.getFront().x, camera.getFront().y, camera.getFront().z);
+        modelWithLightingShader.setFloat("spotLight.cutOff", 12.5);
+        modelWithLightingShader.setFloat("spotLight.outerCutOff", 17.5);
+        modelWithLightingShader.setFloat("spotLight.constant", 1.0f);
+        modelWithLightingShader.setFloat("spotLight.linear", 0.09f);
+        modelWithLightingShader.setFloat("spotLight.quadratic", .032f);
+        modelWithLightingShader.setVec3Float("spotLight.ambient", 0.1f, 0.1f, 0.1f);
+        modelWithLightingShader.setVec3Float("spotLight.diffuse", 0.8f, 0.8f, 0.8f);
+        modelWithLightingShader.setVec3Float("spotLight.specular", 1.0f, 1.0f, 1.0f);
+        // directional light
         modelWithLightingShader.setVec3Float("directionalLight.direction", -0.2f, -1.0f, -0.3f);
         modelWithLightingShader.setVec3Float("directionalLight.ambient", 0.01f, 0.01f, 0.01f);
         modelWithLightingShader.setVec3Float("directionalLight.diffuse", 0.1f, 0.1f, 0.1f);
