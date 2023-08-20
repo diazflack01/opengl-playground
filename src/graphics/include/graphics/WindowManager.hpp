@@ -32,6 +32,11 @@ public:
 
     GLFWwindow* getWindow();
 
+    // enable/disable vsync, this wont have an effect if vsync
+    // is enabled in GPU driver setting
+    void setVSyncEnabled(bool enable);
+    bool isVSyncEnabled() const;
+
 private:
     static void processKeyboardInputs(GLFWwindow* window);
     void updateWindowSize();
@@ -41,4 +46,5 @@ private:
     std::string m_title;
     GLFWwindow* m_window{nullptr};
     bool m_isCloseRequested{false};
+    bool m_enableVSync{true};
 };

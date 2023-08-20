@@ -25,6 +25,7 @@ WindowManager::WindowManager(int width, int height, std::string title)
     }
 
     glfwMakeContextCurrent(m_window);
+    glfwSwapInterval(1); // vsync
 
     glfwSetFramebufferSizeCallback(m_window, framebufferSizeCallback);
 
@@ -95,4 +96,17 @@ void WindowManager::updateWindowSize() {
 
 GLFWwindow *WindowManager::getWindow() {
     return m_window;
+}
+
+void WindowManager::setVSyncEnabled(bool enable) {
+    if (m_enableVSync == enable) {
+        return;
+    }
+
+    m_enableVSync = enable;
+    glfwSwapInterval(m_enableVSync ? 1 : 0);
+}
+
+bool WindowManager::isVSyncEnabled() const {
+    return m_enableVSync;
 }
