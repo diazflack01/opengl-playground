@@ -9,6 +9,7 @@
 #include <graphics/Shader.hpp>
 #include <graphics/Mouse.hpp>
 #include <graphics/Camera.hpp>
+#include <graphics/VertexBuffer.hpp>
 
 #include <utils/Utils.hpp>
 
@@ -74,7 +75,7 @@ int main(int argc, char** argv) {
 
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
-    float planeVertices[] = {
+    std::vector<float> planeVertices = {
         // positions            // normals         // texcoords
          10.0f, -0.5f,  10.0f,  0.0f, 1.0f, 0.0f,  10.0f,  0.0f,
         -10.0f, -0.5f,  10.0f,  0.0f, 1.0f, 0.0f,   0.0f,  0.0f,
@@ -84,86 +85,89 @@ int main(int argc, char** argv) {
         -10.0f, -0.5f, -10.0f,  0.0f, 1.0f, 0.0f,   0.0f, 10.0f,
          10.0f, -0.5f, -10.0f,  0.0f, 1.0f, 0.0f,  10.0f, 10.0f
     };
-    // plane VAO
-    unsigned int planeVAO, planeVBO;
-    glGenVertexArrays(1, &planeVAO);
-    glGenBuffers(1, &planeVBO);
-    glBindVertexArray(planeVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, planeVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(planeVertices), planeVertices, GL_STATIC_DRAW);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
-    glEnableVertexAttribArray(2);
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-    glBindVertexArray(0);
 
-    Shader blinnPhongLightingShader{"resources/shader/demo_phong_lighting.vert", "resources/shader/demo_blinn_phong_lighting.frag"};
-    const auto containerDiffuse = loadTexture("resources/texture/container2.png");
-    const auto containerSpecular = loadTexture("resources/texture/container2_specular.png");
-    const auto floorTexture = loadTexture("resources/texture/wood.png");
-
-    // draw wireframe. Default is GL_FILL
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-
-    // enable depth/z-buffer testing
-    glEnable(GL_DEPTH_TEST);
-
-    while (!windowManager.isCloseRequested()) {
-        const float currentFrame = glfwGetTime();
-        deltaTime = currentFrame - lastFrame;
-        lastFrame = currentFrame;
-
-        // call update to poll events of window
-        windowManager.update();
-
-        // process keyboard inputs
-        processKeyboardInput(windowManager.getWindow());
-
-        // clear buffers
-        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        // view and projection matrix
-        const auto view = camera.getViewMatrix();
-        const auto projection = glm::perspective(glm::radians(camera.getFieldOfView()), SCREEN_WIDTH/SCREEN_HEIGTH, 0.1f, 100.0f);
-
-        // draw plane
-        blinnPhongLightingShader.use();
-        blinnPhongLightingShader.setBool("useBlinn", useBlinnPhong);
-        blinnPhongLightingShader.setBool("useMaterialSpecular", useMaterialSpecular);
-        // mvp
-        blinnPhongLightingShader.setMat4("view", view);
-        blinnPhongLightingShader.setMat4("projection", projection);
-        blinnPhongLightingShader.setMat4("model", IDENTITY_MATRIX);
-        const auto& camPos = camera.getPosition();
-        blinnPhongLightingShader.setVec3Float("viewPos", camPos.x, camPos.y, camPos.z);
-        // light
-        const glm::vec3 lightPos{.0f, .0f, .0f};
-        blinnPhongLightingShader.setVec3Float("light.position",  lightPos.x, lightPos.y, lightPos.z);
-        blinnPhongLightingShader.setVec3Float("light.ambient",  0.05f, 0.05f, 0.05f);
-        blinnPhongLightingShader.setVec3Float("light.diffuse",  1.0f, 1.0f, 1.0f);
-        // weaken the specular to make difference of phong vs blinn obvious
-        blinnPhongLightingShader.setVec3Float("light.specular", .3f, .3f, .3f);
-
-        // material properties
-        // shininess - very low to make difference of phong vs blinn obvious
-        blinnPhongLightingShader.setFloat("material.shininess", 0.5f);
-        // textures
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, containerDiffuse.id);
-        blinnPhongLightingShader.setInt("material.diffuse", 0);
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, containerSpecular.id);
-        blinnPhongLightingShader.setInt("material.specular", 1);
-
+    {
+        // plane VAO
+        unsigned int planeVAO, planeVBO;
+        glGenVertexArrays(1, &planeVAO);
+        VertexBuffer planeVertexBuffer{planeVertices};
         glBindVertexArray(planeVAO);
-        glDrawArrays(GL_TRIANGLES, 0, 6);
+        planeVertexBuffer.bind();
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+        glEnableVertexAttribArray(2);
+        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+        glBindVertexArray(0);
 
-        windowManager.swapBuffers();
-        mouse.endFrame();
+        Shader blinnPhongLightingShader{"resources/shader/demo_phong_lighting.vert", "resources/shader/demo_blinn_phong_lighting.frag"};
+        const auto containerDiffuse = loadTexture("resources/texture/container2.png");
+        const auto containerSpecular = loadTexture("resources/texture/container2_specular.png");
+        const auto floorTexture = loadTexture("resources/texture/wood.png");
+
+        // draw wireframe. Default is GL_FILL
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+        // enable depth/z-buffer testing
+        glEnable(GL_DEPTH_TEST);
+
+        while (!windowManager.isCloseRequested()) {
+            const float currentFrame = glfwGetTime();
+            deltaTime = currentFrame - lastFrame;
+            lastFrame = currentFrame;
+
+            // call update to poll events of window
+            windowManager.update();
+
+            // process keyboard inputs
+            processKeyboardInput(windowManager.getWindow());
+
+            // clear buffers
+            glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+            // view and projection matrix
+            const auto view = camera.getViewMatrix();
+            const auto projection = glm::perspective(glm::radians(camera.getFieldOfView()), SCREEN_WIDTH/SCREEN_HEIGTH, 0.1f, 100.0f);
+
+            // draw plane
+            blinnPhongLightingShader.use();
+            blinnPhongLightingShader.setBool("useBlinn", useBlinnPhong);
+            blinnPhongLightingShader.setBool("useMaterialSpecular", useMaterialSpecular);
+            // mvp
+            blinnPhongLightingShader.setMat4("view", view);
+            blinnPhongLightingShader.setMat4("projection", projection);
+            blinnPhongLightingShader.setMat4("model", IDENTITY_MATRIX);
+            const auto& camPos = camera.getPosition();
+            blinnPhongLightingShader.setVec3Float("viewPos", camPos.x, camPos.y, camPos.z);
+            // light
+            const glm::vec3 lightPos{.0f, .0f, .0f};
+            blinnPhongLightingShader.setVec3Float("light.position",  lightPos.x, lightPos.y, lightPos.z);
+            blinnPhongLightingShader.setVec3Float("light.ambient",  0.05f, 0.05f, 0.05f);
+            blinnPhongLightingShader.setVec3Float("light.diffuse",  1.0f, 1.0f, 1.0f);
+            // weaken the specular to make difference of phong vs blinn obvious
+            blinnPhongLightingShader.setVec3Float("light.specular", .3f, .3f, .3f);
+
+            // material properties
+            // shininess - very low to make difference of phong vs blinn obvious
+            blinnPhongLightingShader.setFloat("material.shininess", 0.5f);
+            // textures
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, containerDiffuse.id);
+            blinnPhongLightingShader.setInt("material.diffuse", 0);
+            glActiveTexture(GL_TEXTURE1);
+            glBindTexture(GL_TEXTURE_2D, containerSpecular.id);
+            blinnPhongLightingShader.setInt("material.specular", 1);
+
+            glBindVertexArray(planeVAO);
+            glDrawArrays(GL_TRIANGLES, 0, 6);
+
+            windowManager.swapBuffers();
+            mouse.endFrame();
+        }
     }
+
 
     glfwTerminate();
     return 0;
