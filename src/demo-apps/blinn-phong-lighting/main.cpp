@@ -10,6 +10,7 @@
 #include <graphics/Mouse.hpp>
 #include <graphics/Camera.hpp>
 #include <graphics/VertexBuffer.hpp>
+#include <graphics/VertexArray.hpp>
 
 #include <utils/Utils.hpp>
 
@@ -88,18 +89,12 @@ int main(int argc, char** argv) {
 
     {
         // plane VAO
-        unsigned int planeVAO, planeVBO;
-        glGenVertexArrays(1, &planeVAO);
         VertexBuffer planeVertexBuffer{planeVertices};
-        glBindVertexArray(planeVAO);
-        planeVertexBuffer.bind();
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
-        glEnableVertexAttribArray(1);
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
-        glEnableVertexAttribArray(2);
-        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-        glBindVertexArray(0);
+        VertexAttributesLayout planeVertexAttributesLayout{};
+        planeVertexAttributesLayout.add(3, GL_FLOAT, false);
+        planeVertexAttributesLayout.add(3, GL_FLOAT, false);
+        planeVertexAttributesLayout.add(2, GL_FLOAT, false);
+        VertexArray planeVertexArray{planeVertexBuffer, planeVertexAttributesLayout};
 
         Shader blinnPhongLightingShader{"resources/shader/demo_phong_lighting.vert", "resources/shader/demo_blinn_phong_lighting.frag"};
         const auto containerDiffuse = loadTexture("resources/texture/container2.png");
@@ -160,7 +155,7 @@ int main(int argc, char** argv) {
             glBindTexture(GL_TEXTURE_2D, containerSpecular.id);
             blinnPhongLightingShader.setInt("material.specular", 1);
 
-            glBindVertexArray(planeVAO);
+            planeVertexArray.bind();
             glDrawArrays(GL_TRIANGLES, 0, 6);
 
             windowManager.swapBuffers();

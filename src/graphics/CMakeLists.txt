@@ -10,7 +10,8 @@ add_library(${LIB_NAME}
         Animator.cpp
         WindowManager.cpp
         Mouse.cpp
-        VertexBuffer.cpp)
+        VertexBuffer.cpp
+        VertexArray.cpp)
 
 target_compile_features(${LIB_NAME} PRIVATE cxx_std_17)
 target_link_libraries(${LIB_NAME} PRIVATE glfw assimp glm glad utils)
