@@ -23,6 +23,7 @@ struct Material {
 uniform Material material;
 uniform Light light;
 uniform vec3 viewPos;
+uniform bool useSpecular = true;
 
 void main()
 {
@@ -37,11 +38,14 @@ void main()
     vec3 diffuse = (diff * vec3(texture(material.diffuse, TexCoords))) * light.diffuse;
 
     // specular
-    vec3 viewDir = normalize(viewPos - FragPos);
-    vec3 reflectDir = reflect(-lightDir, norm);
+    vec3 specular;
+    if (useSpecular) {
+        vec3 viewDir = normalize(viewPos - FragPos);
+        vec3 reflectDir = reflect(-lightDir, norm);
 
-    float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
-    vec3 specular = (spec * vec3(texture(material.specular, TexCoords))) * light.specular;
+        float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
+        specular = (spec * vec3(texture(material.specular, TexCoords))) * light.specular;
+    }
 
     vec3 result = (ambient + diffuse + specular);
     FragColor = vec4(result, 1.0);
