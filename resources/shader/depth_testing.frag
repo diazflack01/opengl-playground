@@ -4,8 +4,8 @@ out vec4 FragColor;
 in vec2 TexCoord;
 
 uniform sampler2D texture0;
-uniform bool visualizeDepthNonLinear;
-uniform bool visualizeDepthLinear;
+uniform bool visualizeDepthNonLinear = false;
+uniform bool visualizeDepthLinear = false;
 
 float near = 0.1; 
 float far  = 100.0; 

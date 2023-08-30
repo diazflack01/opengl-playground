@@ -46,6 +46,9 @@ const float fov = 45.0f; // smaller: zoomed-in, larger: zoomed-out
 const float aswdMovementSensitivity = 2.5f;
 const float mouseMovementSensitivity = 0.1f;
 
+bool visualizeDepthBuffer = false;
+bool visualizeDepthBufferLinear = false;
+
 void processKeyboardInput(GLFWwindow* window);
 void mouseMoveCallback(GLFWwindow* window, double xpos, double ypos);
 void mouseScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
@@ -72,58 +75,56 @@ int main(int argc, char** argv) {
 
     WindowManager windowManager{SCREEN_WIDTH, SCREEN_HEIGTH, WINDOW_TITLE};
 
-    // mouse move and scroll callbacks
-    glfwSetCursorPosCallback(windowManager.getWindow(), mouseMoveCallback);
+    // mouse callbacks
     glfwSetScrollCallback(windowManager.getWindow(), mouseScrollCallback);
     glfwSetMouseButtonCallback(windowManager.getWindow(), mouseButtonCallback);
 
     const std::vector<float> cubeVertices = {
-            // positions          // normals           // texture coords
-            -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
-            0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 0.0f,
-            0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f,
-            0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f,
-            -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 1.0f,
-            -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
+            // positions          // texture Coords
+            -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+            0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
+            0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+            0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+            -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+            -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
 
-            -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 0.0f,
-            0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 0.0f,
-            0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 1.0f,
-            0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 1.0f,
-            -0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 1.0f,
-            -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 0.0f,
+            -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+            0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+            0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+            0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+            -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
+            -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
 
-            -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
-            -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 1.0f,
-            -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
-            -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
-            -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 0.0f,
-            -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
+            -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+            -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+            -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+            -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+            -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+            -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
 
-            0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
-            0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f,
-            0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
-            0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
-            0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 0.0f,
-            0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
+            0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+            0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+            0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+            0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+            0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+            0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
 
-            -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f,
-            0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 1.0f,
-            0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f,
-            0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f,
-            -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 0.0f,
-            -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f,
+            -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+            0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
+            0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+            0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+            -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+            -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
 
-            -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f,
-            0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 1.0f,
-            0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
-            0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
-            -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 0.0f,
-            -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f
+            -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+            0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+            0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+            0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+            -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
+            -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
     };
     VertexBuffer cubeVBO{cubeVertices};
     VertexAttributesLayout cubeVAOLayout{};
-    cubeVAOLayout.add(3, GL_FLOAT, false);
     cubeVAOLayout.add(3, GL_FLOAT, false);
     cubeVAOLayout.add(2, GL_FLOAT, false);
     VertexArray cubeVAO{cubeVBO, cubeVAOLayout};
@@ -131,23 +132,22 @@ int main(int argc, char** argv) {
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
     const std::vector<float> planeVertices = {
-            // positions            // normals         // texcoords
-            10.0f, -0.5f,  10.0f,  0.0f, 1.0f, 0.0f,  10.0f,  0.0f,
-            -10.0f, -0.5f,  10.0f,  0.0f, 1.0f, 0.0f,   0.0f,  0.0f,
-            -10.0f, -0.5f, -10.0f,  0.0f, 1.0f, 0.0f,   0.0f, 10.0f,
+            // positions          // texture Coords (note we set these higher than 1 (together with GL_REPEAT as texture wrapping mode). this will cause the floor texture to repeat)
+            5.0f, -0.5f,  5.0f,  2.0f, 0.0f,
+            -5.0f, -0.5f,  5.0f,  0.0f, 0.0f,
+            -5.0f, -0.5f, -5.0f,  0.0f, 2.0f,
 
-            10.0f, -0.5f,  10.0f,  0.0f, 1.0f, 0.0f,  10.0f,  0.0f,
-            -10.0f, -0.5f, -10.0f,  0.0f, 1.0f, 0.0f,   0.0f, 10.0f,
-            10.0f, -0.5f, -10.0f,  0.0f, 1.0f, 0.0f,  10.0f, 10.0f
+            5.0f, -0.5f,  5.0f,  2.0f, 0.0f,
+            -5.0f, -0.5f, -5.0f,  0.0f, 2.0f,
+            5.0f, -0.5f, -5.0f,  2.0f, 2.0f
     };
     VertexBuffer planeVBO{planeVertices};
     VertexAttributesLayout planeVAOLayout{};
     planeVAOLayout.add(3, GL_FLOAT, false);
-    planeVAOLayout.add(3, GL_FLOAT, false);
     planeVAOLayout.add(2, GL_FLOAT, false);
     VertexArray planeVAO{planeVBO, planeVAOLayout};
 
-    Shader shader{"resources/shader/demo_phong_lighting.vert", "resources/shader/demo_phong_lighting.frag"};
+    Shader shader{"resources/shader/depth_testing.vert", "resources/shader/depth_testing.frag"};
     Texture cubeTexture{"resources/texture/marble.jpg", 0};
     Texture floorTexture{"resources/texture/metal.png", 0};
 
@@ -191,18 +191,24 @@ int main(int argc, char** argv) {
         shader.use();
         shader.setMat4("view", view);
         shader.setMat4("projection", projection);
-        const auto& camPos = camera.getPosition();
-        shader.setVec3Float("viewPos", camPos.x, camPos.y, camPos.z);
-        // light
-        shader.setVec3Float("light.position",  1.0f, 1.0f, 1.0f);
-        shader.setVec3Float("light.ambient",  1.0f, 1.0f, 1.0f);
-        shader.setVec3Float("light.diffuse",  1.0f, 1.0f, 1.0f);
-        shader.setBool("useSpecular", false);
+
+        if (visualizeDepthBuffer) {
+            if (visualizeDepthBufferLinear) {
+                shader.setBool("visualizeDepthLinear", true);
+                shader.setBool("visualizeDepthNonLinear", false);
+            } else {
+                shader.setBool("visualizeDepthLinear", false);
+                shader.setBool("visualizeDepthNonLinear", true);
+            }
+        } else {
+            shader.setBool("visualizeDepthNonLinear", false);
+            shader.setBool("visualizeDepthLinear", false);
+        }
 
         // cubes
         cubeVAO.bind();
         cubeTexture.bind(12);
-        shader.setInt("material.diffuse",  12);
+        shader.setInt("texture0",  12);
         auto model = IDENTITY_MATRIX;
         // cube 1
         model = glm::translate(IDENTITY_MATRIX, glm::vec3{-1.0f, 0.0f, -1.0f});
@@ -291,6 +297,8 @@ void imguiHelperFunc(ImGuiIO& io, WindowManager& window) {
     static bool drawWireFrame = false;
     static bool enableDepthTesting = true;
     static auto depthFunc = GL_ALWAYS;
+    static bool enableCursorCallback = false;
+    static bool lastAcceptedCursorCallback = false;
 
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
@@ -308,6 +316,7 @@ void imguiHelperFunc(ImGuiIO& io, WindowManager& window) {
         ImGui::Checkbox("V-Sync", &enableVSync);
         ImGui::Checkbox("Hide Mouse Cursor", &hideMouseCursor);
         ImGui::Checkbox("Wireframe drawing", &drawWireFrame);
+        ImGui::Checkbox("Enable Look Around", &enableCursorCallback);
         ImGui::Checkbox("Depth testing", &enableDepthTesting);
         if (enableDepthTesting) {
             const char* depthTestFunc[] = {"GL_ALWAYS", "GL_LESS", "GL_NEVER", "GL_EQUAL", "GL_LEQUAL", "GL_GREATER", "GL_NOTEQUAL", "GL_GEQUAL"};
@@ -332,7 +341,12 @@ void imguiHelperFunc(ImGuiIO& io, WindowManager& window) {
                 ImGui::EndCombo();
             }
         }
-        ImGui::NewLine();
+        if (enableDepthTesting) {
+            ImGui::Checkbox("Visualize Depth Buffer", &visualizeDepthBuffer);
+            if (visualizeDepthBuffer) {
+                ImGui::Checkbox("Visualize Depth Buffer - Linear", &visualizeDepthBufferLinear);
+            }
+        }
         ImGui::NewLine();
         ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
         ImGui::End();
@@ -347,6 +361,11 @@ void imguiHelperFunc(ImGuiIO& io, WindowManager& window) {
         glDepthFunc(depthFunc);
     } else {
         glDisable(GL_DEPTH_TEST);
+    }
+
+    if (lastAcceptedCursorCallback != enableCursorCallback) {
+        lastAcceptedCursorCallback = enableCursorCallback;
+        glfwSetCursorPosCallback(window.getWindow(), lastAcceptedCursorCallback ? mouseMoveCallback : nullptr);
     }
 
     ImGui::Render();
