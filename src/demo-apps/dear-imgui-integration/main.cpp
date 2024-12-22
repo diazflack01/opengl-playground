@@ -7,14 +7,11 @@
 #include <graphics/Shader.hpp>
 #include <graphics/Mouse.hpp>
 #include <graphics/Camera.hpp>
+#include <graphics/ImGuiWrapper.hpp>
 
 #include <utils/Utils.hpp>
 
 #include <glm/gtc/matrix_transform.hpp>
-
-#include <imgui.h>
-#include <imgui_impl_glfw.h>
-#include <imgui_impl_opengl3.h>
 
 const float SCREEN_WIDTH = 800.0f;
 const float SCREEN_HEIGTH = 600.0f;
@@ -68,8 +65,6 @@ bool enableDepthTesting = true;
 
 bool showImGuiDemoWindow = false;
 
-void imguiHelperFunc(ImGuiIO& io, WindowManager& window);
-
 int main(int argc, char** argv) {
     fmt::println("main ()");
 
@@ -121,16 +116,8 @@ int main(int argc, char** argv) {
     // enable depth/z-buffer testing
     glEnable(GL_DEPTH_TEST);
 
-    // Setup Dear ImGui Context
-    IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO(); (void)io;
-    // io.WantCaptureMouse = true;
-
-    ImGui::StyleColorsDark();
-
-    ImGui_ImplGlfw_InitForOpenGL(windowManager.getWindow(), true);
-    ImGui_ImplOpenGL3_Init("#version 330");
+    // Dear ImGui Wrapper
+    graphics::ImGuiWrapper imGuiWrapper{windowManager};
 
     while (!windowManager.isCloseRequested()) {
         const float currentFrame = glfwGetTime();
@@ -183,8 +170,7 @@ int main(int argc, char** argv) {
         glBindVertexArray(planeVAO);
         glDrawArrays(GL_TRIANGLES, 0, 6);
 
-        imguiHelperFunc(io, windowManager);
-
+        imGuiWrapper.render();
 
         windowManager.swapBuffers();
         mouse.endFrame();
@@ -246,40 +232,4 @@ void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
             break;
         }
     }
-}
-
-void imguiHelperFunc(ImGuiIO& io, WindowManager& window) {
-    ImGui_ImplOpenGL3_NewFrame();
-    ImGui_ImplGlfw_NewFrame();
-    ImGui::NewFrame();
-
-    if (showImGuiDemoWindow)
-        ImGui::ShowDemoWindow(&showImGuiDemoWindow);
-
-    {
-        static float f = 0.0f;
-        static int counter = 0;
-
-        ImGui::Begin("Settings");
-        ImGui::Checkbox("ImGui Demo Window", &showImGuiDemoWindow);
-        ImGui::Checkbox("V-Sync", &enableVSync);
-        ImGui::Checkbox("Hide Mouse Cursor", &hideMouseCursor);
-        ImGui::Checkbox("Wireframe drawing", &drawWireFrame);
-        ImGui::Checkbox("Depth testing", &enableDepthTesting);
-        ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
-        ImGui::End();
-    }
-
-    window.setVSyncEnabled(enableVSync);
-    glfwSetInputMode(window.getWindow(), GLFW_CURSOR, hideMouseCursor ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
-    glPolygonMode(GL_FRONT_AND_BACK, drawWireFrame ? GL_LINE : GL_FILL);
-
-    if (enableDepthTesting) {
-        glEnable(GL_DEPTH_TEST);
-    } else {
-        glDisable(GL_DEPTH_TEST);
-    }
-
-    ImGui::Render();
-    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
