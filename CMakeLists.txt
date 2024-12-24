@@ -13,5 +13,6 @@ add_subdirectory(external/glm)
 add_subdirectory(external/assimp)
 add_subdirectory(external/imgui-glfw)
 add_subdirectory(external/fmt)
+add_subdirectory(external/freetype)
 
 add_subdirectory(src)

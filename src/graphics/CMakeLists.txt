@@ -14,8 +14,9 @@ add_library(${LIB_NAME}
         VertexArray.cpp
         IndexBuffer.cpp
         Texture.cpp
-        ImGuiWrapper.cpp)
+        ImGuiWrapper.cpp
+        Text2D.cpp)
 
 target_compile_features(${LIB_NAME} PRIVATE cxx_std_17)
-target_link_libraries(${LIB_NAME} PRIVATE glfw assimp glm glad utils imgui)
+target_link_libraries(${LIB_NAME} PRIVATE glfw assimp glm glad utils imgui freetype)
 target_include_directories(${LIB_NAME} PUBLIC include PRIVATE include/graphics)

@@ -7,6 +7,7 @@ add_subdirectory(phong-lighting)
 add_subdirectory(model-loading)
 add_subdirectory(depth-testing)
 add_subdirectory(blinn-phong-lighting)
+add_subdirectory(text-rendering)
 
 add_subdirectory(raytracing-in-one-weekend)
 
