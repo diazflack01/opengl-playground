@@ -1,6 +1,8 @@
 set(LIB_NAME "graphics")
 
 add_library(${LIB_NAME}
+        STATIC
+        WindowManager.cpp
         Shader.cpp
         Camera.cpp
         Mesh.cpp
@@ -8,7 +10,6 @@ add_library(${LIB_NAME}
         Bone.cpp
         Animation.cpp
         Animator.cpp
-        WindowManager.cpp
         Mouse.cpp
         VertexBuffer.cpp
         VertexArray.cpp
@@ -18,5 +19,7 @@ add_library(${LIB_NAME}
         Text2D.cpp)
 
 target_compile_features(${LIB_NAME} PRIVATE cxx_std_17)
-target_link_libraries(${LIB_NAME} PRIVATE glfw assimp glm glad utils imgui freetype)
+# TODO: Investigate why moving the library dependencies from `PUBLIC` to PRIVATE
+# causes compilation error w/ missing headers for included headers
+target_link_libraries(${LIB_NAME} PUBLIC glfw glm glad PRIVATE assimp utils imgui freetype)
 target_include_directories(${LIB_NAME} PUBLIC include PRIVATE include/graphics)

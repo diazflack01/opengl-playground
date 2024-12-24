@@ -46,6 +46,9 @@ void WindowManager::update() {
     processKeyboardInputs(m_window);
 
     m_isCloseRequested = glfwWindowShouldClose(m_window);
+
+    glClearColor(.1f, 0.3f, 0.1f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
 bool WindowManager::isCloseRequested() const {
